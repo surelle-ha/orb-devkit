@@ -1,0 +1,7 @@
+{
+  "name": "Vorb",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue"
+}
