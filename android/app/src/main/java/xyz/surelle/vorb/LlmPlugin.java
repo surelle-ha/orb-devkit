@@ -31,7 +31,7 @@ public class LlmPlugin extends Plugin {
     private static final String MODEL_FILENAME = "gemma3-1b-it-int4.task";
     private static final String MODEL_URL      =
         "https://huggingface.co/litert-community/Gemma3-1B-IT/resolve/main/gemma3-1b-it-int4.task?download=true";
-    private static final String HF_TOKEN       = "hf_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"; // REPLACE WITH YOUR TOKEN
+    // private static final String HF_TOKEN       = "hf_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"; // REPLACE WITH YOUR TOKEN
 
     private static final long MIN_VALID_SIZE  = 10 * 1024 * 1024L;
     private static final int  MAX_REDIRECTS   = 15;
