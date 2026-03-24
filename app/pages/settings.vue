@@ -819,8 +819,6 @@ import {
 import { setPin, removePin, pinEnabled } from '../composables/usePin'
 import { useNav }  from '../composables/useNav'
 import { useDark, type DarkMode } from '../composables/useDark'
-import { AI_ENABLED_KEY } from '../composables/useOrbAI'
-import { useNativeLLM, initNativeModel, deleteNativeModel } from '../composables/useNativeLLM'
 
 const { navigate }      = useNav()
 const { mode, setMode } = useDark()

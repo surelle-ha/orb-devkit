@@ -93,30 +93,21 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Home, Code2, FlaskConical, MoreHorizontal, Zap } from 'lucide-vue-next'
+import { Home, FileCode2, FlaskConical, MoreHorizontal, Zap } from 'lucide-vue-next'
 import { useNav }          from '../composables/useNav'
 import { settings, orbLog } from '../composables/useStore'
-import AddTransactionSheet from '../components/AddTransactionSheet.vue'
-import AiDownloadPill      from '../components/AiDownloadPill.vue'
 
 // Page imports
 import Index        from '../pages/index.vue'
-import Cards        from '../pages/cards.vue'
-import Grocery      from '../pages/grocery.vue'
-import Bills        from '../pages/bills.vue'
+import Env          from '../pages/env.vue'  
 import More         from '../pages/more.vue'
 import Settings     from '../pages/settings.vue'
 import Developer    from '../pages/developer.vue'
-import Transactions from '../pages/transaction.vue'
-import OrbChat      from '../components/OrbChat.vue'
-import Profile      from '../pages/profile.vue'
-import Randomizer   from '../pages/randomizer.vue'
-import About        from '../pages/about.vue'
 
 const { activePage, transitionName, navigate, TAB_ORDER } = useNav()
 const accent = computed(() => settings.value.accentColor)
 
-// ── TCP state (shared via provide/inject or simple module-level ref) ──────
+// ── TCP state ──────────────────────────────────────────────
 const tcpConnected = ref(false)
 const tcpPort      = ref(3131)
 
@@ -126,11 +117,11 @@ function toggleTcp() {
 }
 
 // ── Pages ─────────────────────────────────────────────────
-const TAB_PAGES = new Set(['home', 'cards', 'grocery', 'bills', 'more'])
+const TAB_PAGES = new Set(['home', 'env', 'grocery', 'bills', 'more'])
 const isTabPage  = computed(() => TAB_PAGES.has(activePage.value))
 
 const PAGE_MAP: Record<string, any> = {
-  home: Index, cards: Cards, grocery: Grocery,
+  home: Index, env: Env, grocery: Grocery,
   bills: Bills, more: More,
   settings: Settings, developer: Developer,
   transactions: Transactions, orb: OrbChat,
@@ -140,12 +131,12 @@ const PAGE_MAP: Record<string, any> = {
 const currentPage = computed(() => PAGE_MAP[activePage.value])
 
 const leftTabs  = [
-  { id: 'home',  icon: Home,       label: 'home'   },
-  { id: 'cards', icon: Code2,      label: 'env'    },
+  { id: 'home', icon: Home,      label: 'home' },
+  { id: 'env',  icon: FileCode2, label: 'env'  },
 ]
 const rightTabs = [
-  { id: 'more',       icon: MoreHorizontal, label: 'tools'  },
-  { id: 'developer',  icon: FlaskConical,   label: 'dev'    },
+  { id: 'more',      icon: MoreHorizontal, label: 'tools' },
+  { id: 'developer', icon: FlaskConical,   label: 'dev'   },
 ]
 
 function handlePop() {

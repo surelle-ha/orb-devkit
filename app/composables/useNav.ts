@@ -2,11 +2,11 @@
 import { ref, readonly } from 'vue'
 
 export type PageId =
-  | 'home' | 'cards' | 'grocery' | 'bills' | 'more'
+  | 'home' | 'env' | 'grocery' | 'bills' | 'more'
   | 'settings' | 'developer' | 'orb' | 'transactions'
   | 'profile' | 'randomizer' | 'about'
 
-const TAB_ORDER: PageId[] = ['home', 'cards', 'grocery', 'bills', 'more']
+const TAB_ORDER: PageId[] = ['home', 'env', 'grocery', 'bills', 'more']
 
 const activePage     = ref<PageId>('home')
 const transitionName = ref<'slide-left' | 'slide-right'>('slide-left')

@@ -490,9 +490,7 @@ import {
   totalBalance, totalIncome, totalExpenses, spendingByCategory, recentTx, transactions,
 } from '../composables/useStore'
 import { useDevControl } from '../composables/useDevControl'
-import { useNativeLLM, checkModelDownloaded } from '../composables/useNativeLLM'
 import { triggerLockNow } from '../composables/useIdleLock'
-import OrbitRecap from '../components/OrbitRecap.vue'
 
 const { navigate } = useNav()
 const { resetAll }  = useDevControl()

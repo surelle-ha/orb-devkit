@@ -18,17 +18,12 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, nextTick } from 'vue'
 import SplashScreen     from '~/components/SplashScreen.vue'
-import OnboardingScreen from '~/components/OnboardingScreen.vue'
-import AiSetupScreen    from '~/components/AiSetupScreen.vue'
 import IdleLockScreen   from '~/components/IdleLockScreen.vue'
 import PinLockScreen    from '~/components/PinLockScreen.vue'
-import { initDatabase } from '~/composables/useDatabase'
 import { useDark }      from '~/composables/useDark'
 import { initIdleLock } from '~/composables/useIdleLock'
 import { settings }     from '~/composables/useStore'
 import { pinEnabled, lockWithPin } from '~/composables/usePin'
-import { AI_ENABLED_KEY } from '~/composables/useOrbAI'
-import { initNativeModel, checkModelDownloaded } from '~/composables/useNativeLLM'
 
 type Phase = 'splash' | 'onboarding' | 'ai-setup' | 'app'
 const phase      = ref<Phase>('splash')
