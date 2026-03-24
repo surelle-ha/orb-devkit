@@ -79,8 +79,8 @@
             <LayoutTemplate :size="17" :style="{ color: accent }" :stroke-width="1.8" />
           </div>
           <div>
-            <p class="text-[14px] font-bold text-slate-800 dark:text-zinc-100">Dashboard Card Style</p>
-            <p class="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">Choose your home screen card look</p>
+            <p class="text-[14px] font-bold text-slate-800 dark:text-zinc-100">Core Orb Card Style</p>
+            <p class="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">Choose your dashboard orb appearance</p>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2.5">
@@ -90,9 +90,34 @@
               settings.balanceStyle === style.value
                 ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/30'
                 : 'border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800']">
-            <div class="w-full rounded-xl overflow-hidden mb-2" style="height:56px;position:relative;"
+            <!-- Card preview with orb -->
+            <div class="w-full rounded-xl overflow-hidden mb-2 relative" style="height:64px;"
               :style="style.previewStyle(accent)">
+              <!-- Background overlay -->
               <div class="absolute inset-0" :style="style.overlayStyle(accent)"></div>
+              <!-- Mini orb at position defined per style -->
+              <div class="absolute flex items-center justify-center" :style="style.orbStyle(accent)">
+                <!-- Glow halo -->
+                <div class="absolute rounded-full pointer-events-none"
+                  :style="{ inset:'-8px', background:`radial-gradient(circle, ${accent}44 0%, transparent 70%)`, filter:'blur(5px)', borderRadius:'50%' }"></div>
+                <!-- Orbit ring -->
+                <div class="absolute rounded-full"
+                  :style="{ inset:'-3px', border:`1px solid ${accent}55`, borderRadius:'50%' }"></div>
+                <!-- Sphere -->
+                <div class="absolute inset-0 rounded-full"
+                  style="background:radial-gradient(circle at 36% 30%, #1e1b4b 0%, #09090b 55%, #000 100%);"
+                  :style="{ boxShadow:`inset 0 0 10px rgba(0,0,0,1), 0 0 0 1px ${accent}44` }"></div>
+                <!-- Shimmer highlight -->
+                <div class="absolute inset-0 rounded-full"
+                  :style="{ background:`radial-gradient(circle at 30% 28%, ${accent}30 0%, transparent 55%)` }"></div>
+              </div>
+              <!-- Position label badge -->
+              <div class="absolute bottom-1.5 right-2 pointer-events-none">
+                <span class="text-[7px] font-mono font-bold px-1.5 py-0.5 rounded"
+                  :style="{ background: 'rgba(0,0,0,0.5)', color: accent + 'CC', border: `1px solid ${accent}33` }">
+                  {{ style.orbLabel }}
+                </span>
+              </div>
             </div>
             <p :class="['text-[12px] font-black text-center', settings.balanceStyle === style.value ? 'text-violet-600 dark:text-violet-300' : 'text-slate-500 dark:text-zinc-400']">{{ style.label }}</p>
             <p class="text-[9px] text-slate-400 dark:text-zinc-600 text-center mt-0.5">{{ style.sub }}</p>
@@ -530,24 +555,60 @@ function applyCustom()   { if (/^#[0-9a-fA-F]{6}$/.test(customHex.value)) { save
 // ── Card styles ────────────────────────────────────────────
 const cardStyles = [
   {
-    value: 'supreme' as const, label: 'Supreme Orb', sub: 'Orb with starfield',
-    previewStyle: (_a: string) => ({ background: '#09090b', height: '56px' }),
-    overlayStyle: (a: string)  => ({ background: `radial-gradient(ellipse at 50% 30%, ${a}30 0%, transparent 70%)` }),
+    value: 'supreme' as const,
+    label: 'Supreme Orb',
+    sub: 'Centered with starfield',
+    orbLabel: 'orb · center',
+    previewStyle: (_a: string) => ({ background: '#09090b', height: '64px' }),
+    overlayStyle: (a: string)  => ({ background: `radial-gradient(ellipse at 50% 35%, ${a}25 0%, transparent 65%)` }),
+    // Centered
+    orbStyle: (_a: string) => ({
+      width: '30px', height: '30px',
+      top: '50%', left: '50%',
+      transform: 'translate(-50%, -58%)',
+    }),
   },
   {
-    value: 'minimal' as const, label: 'Minimal Orb', sub: 'Clean & compact',
-    previewStyle: (_a: string) => ({ background: 'white', height: '56px', border: '1px solid rgba(0,0,0,0.06)' }),
+    value: 'minimal' as const,
+    label: 'Minimal Orb',
+    sub: 'Compact, left-aligned',
+    orbLabel: 'orb · left',
+    previewStyle: (_a: string) => ({ background: 'rgba(12,12,24,0.9)', height: '64px', border: '1px solid rgba(255,255,255,0.06)' }),
     overlayStyle: (_a: string) => ({ background: 'transparent' }),
+    // Left-aligned, vertically centered
+    orbStyle: (_a: string) => ({
+      width: '26px', height: '26px',
+      top: '50%', left: '14px',
+      transform: 'translateY(-50%)',
+    }),
   },
   {
-    value: 'neon' as const, label: 'Neon Card', sub: 'Dark gradient glow',
-    previewStyle: (a: string)  => ({ background: `linear-gradient(135deg, #0f0f23, ${a}55)`, height: '56px' }),
-    overlayStyle: (_a: string) => ({ background: 'transparent' }),
+    value: 'neon' as const,
+    label: 'Neon Card',
+    sub: 'Centered with edge glow',
+    orbLabel: 'orb · center',
+    previewStyle: (a: string)  => ({ background: `linear-gradient(135deg, #0a0a1a 0%, ${a}30 100%)`, height: '64px' }),
+    overlayStyle: (a: string)  => ({ background: `linear-gradient(90deg, transparent 40%, ${a}15)` }),
+    // Centered
+    orbStyle: (_a: string) => ({
+      width: '30px', height: '30px',
+      top: '50%', left: '50%',
+      transform: 'translate(-50%, -50%)',
+    }),
   },
   {
-    value: 'glass' as const, label: 'Glass Card', sub: 'Frosted blur effect',
-    previewStyle: (_a: string) => ({ background: 'rgba(255,255,255,0.08)', height: '56px', border: '1px solid rgba(255,255,255,0.18)' }),
-    overlayStyle: (a: string)  => ({ background: `radial-gradient(ellipse at 30% 50%, ${a}20 0%, transparent 60%)` }),
+    value: 'glass' as const,
+    label: 'Glass Card',
+    sub: 'Frosted, orb top-center',
+    orbLabel: 'orb · top',
+    previewStyle: (_a: string) => ({ background: 'rgba(255,255,255,0.06)', height: '64px', border: '1px solid rgba(255,255,255,0.14)', backdropFilter: 'blur(12px)' }),
+    overlayStyle: (a: string)  => ({ background: `radial-gradient(ellipse at 50% -10%, ${a}28 0%, transparent 65%)` }),
+    // Top-center (like the glass card in dashboard)
+    orbStyle: (_a: string) => ({
+      width: '26px', height: '26px',
+      top: '10px', left: '50%',
+      transform: 'translateX(-50%)',
+    }),
   },
 ]
 

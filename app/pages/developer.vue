@@ -245,47 +245,27 @@
         </div>
         <div class="flex-1 overflow-y-auto px-4 pb-6" style="-webkit-overflow-scrolling:touch;">
           <div v-if="inspectorView === 'pretty'">
-            <div v-if="inspector.parsedType === 'transactions'" class="space-y-2">
-              <div v-if="!inspector.parsed?.length" class="text-zinc-500 text-[13px] font-mono text-center py-8">Empty</div>
-              <div v-for="(tx, i) in inspector.parsed" :key="tx.id ?? i"
-                class="rounded-2xl bg-zinc-900 border border-zinc-800 px-4 py-3">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">#{{ i+1 }}</span>
-                  <span :class="['text-[14px] font-black', tx.amount > 0 ? 'text-emerald-400' : 'text-rose-400']">
-                    {{ tx.amount > 0 ? '+' : '' }}{{ tx.amount?.toLocaleString() }}
-                  </span>
-                </div>
-                <p class="text-[14px] font-bold text-white mb-1">{{ tx.name }}</p>
-                <div class="grid grid-cols-2 gap-x-4 gap-y-0.5">
-                  <span class="text-[10px] text-zinc-500">Category</span><span class="text-[10px] text-zinc-300 font-mono">{{ tx.category }}</span>
-                  <span class="text-[10px] text-zinc-500">Date</span><span class="text-[10px] text-zinc-300 font-mono">{{ tx.date }}</span>
-                  <span class="text-[10px] text-zinc-500">Account ID</span><span class="text-[10px] text-zinc-300 font-mono">{{ tx.accountId ?? 'cash' }}</span>
-                  <span class="text-[10px] text-zinc-500">ID</span><span class="text-[10px] text-zinc-300 font-mono truncate">{{ tx.id }}</span>
-                </div>
-              </div>
-            </div>
-            <div v-else-if="inspector.parsedType === 'accounts'" class="space-y-2">
-              <div v-if="!inspector.parsed?.length" class="text-zinc-500 text-[13px] font-mono text-center py-8">Empty</div>
-              <div v-for="(acc, i) in inspector.parsed" :key="acc.id ?? i"
-                class="rounded-2xl border border-zinc-800 overflow-hidden">
-                <div class="px-4 py-2.5 flex items-center gap-3" :style="{ background: acc.gradient ?? '#1e1b4b' }">
-                  <p class="text-[14px] font-black text-white flex-1">{{ acc.name ?? acc.bank }}</p>
-                  <span class="text-[10px] font-bold text-white/50 uppercase">{{ acc.type }}</span>
-                </div>
-                <div class="bg-zinc-900 px-4 py-2.5 grid grid-cols-2 gap-x-4 gap-y-0.5">
-                  <template v-for="(val, key) in acc" :key="key">
-                    <span v-if="key !== 'gradient'" class="text-[10px] text-zinc-500 capitalize">{{ key }}</span>
-                    <span v-if="key !== 'gradient'" class="text-[10px] text-zinc-300 font-mono truncate">{{ typeof val === 'boolean' ? (val ? 'yes' : 'no') : val }}</span>
-                  </template>
-                </div>
-              </div>
-            </div>
-            <div v-else-if="inspector.parsedType === 'settings'"
+            <div v-if="inspector.parsedType === 'settings'"
               class="rounded-2xl bg-zinc-900 border border-zinc-800 px-4 py-3 space-y-2">
               <div v-for="(val, key) in inspector.parsed" :key="String(key)"
                 class="flex items-center justify-between py-1.5 border-b border-zinc-800/60 last:border-0">
                 <span class="text-[12px] font-bold text-zinc-400 capitalize">{{ key }}</span>
                 <span class="text-[12px] font-mono text-violet-300">{{ String(val) }}</span>
+              </div>
+            </div>
+            <div v-else-if="inspector.parsedType === 'array'" class="space-y-2">
+              <div v-if="!inspector.parsed?.length" class="text-zinc-500 text-[13px] font-mono text-center py-8">Empty</div>
+              <div v-for="(item, i) in inspector.parsed" :key="i"
+                class="rounded-2xl bg-zinc-900 border border-zinc-800 px-4 py-3">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">#{{ i+1 }}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                  <template v-for="(val, key) in item" :key="String(key)">
+                    <span class="text-[10px] text-zinc-500 capitalize truncate">{{ key }}</span>
+                    <span class="text-[10px] text-zinc-300 font-mono truncate">{{ String(val) }}</span>
+                  </template>
+                </div>
               </div>
             </div>
             <div v-else class="rounded-2xl bg-zinc-900 border border-zinc-800 px-4 py-3">
@@ -311,13 +291,13 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import {
   ChevronLeft, ChevronRight, RotateCcw, Download, Trash2, X,
-  CreditCard, ArrowLeftRight, Settings2, Key, Copy, Lock,
+  Settings2, Key, Copy, Lock, FileCode2, ShieldCheck, BrainCircuit,
 } from 'lucide-vue-next'
 import { useNav } from '../composables/useNav'
 import {
   appLogs, orbLog,
-  TXNS_KEY, CARDS_KEY, SETTINGS_KEY, BILLS_KEY,
-  settings, transactions,
+  SETTINGS_KEY,
+  settings,
 } from '../composables/useStore'
 import { useDevControl } from '../composables/useDevControl'
 import { triggerLockNow } from '../composables/useIdleLock'
@@ -451,19 +431,20 @@ const fpsLinePath  = computed(() => buildPath(fpsHistory.value, 60))
 const fpsFillPath  = computed(() => buildPath(fpsHistory.value, 60, 56, true))
 
 const perfStats = computed(() => [
-  { label: 'CPU',  value: latestCpu.value + '%',  sub: 'estimated',  color: cpuColor.value },
-  { label: 'Heap', value: latestHeap.value + 'M', sub: 'JS heap',    color: '#8b5cf6'      },
-  { label: 'FPS',  value: String(latestFps.value), sub: 'frame rate', color: fpsColor.value },
-  { label: 'TXNs', value: String(transactions.value.length), sub: 'records', color: '#60a5fa' },
+  { label: 'CPU',  value: latestCpu.value + '%',   sub: 'estimated',  color: cpuColor.value  },
+  { label: 'Heap', value: latestHeap.value + 'M',  sub: 'JS heap',    color: '#8b5cf6'       },
+  { label: 'FPS',  value: String(latestFps.value), sub: 'frame rate', color: fpsColor.value  },
+  { label: 'Logs', value: String(persistedLogs.value.length), sub: 'entries', color: '#60a5fa' },
 ])
 
-// ── Storage inspector ──────────────────────────────────────
+// ── Storage inspector — DevKit keys only ───────────────────
 const LS_KEY_META = [
-  { key: TXNS_KEY,              label: 'Transactions',     icon: ArrowLeftRight, type: 'transactions' },
-  { key: CARDS_KEY,             label: 'Accounts / Cards', icon: CreditCard,     type: 'accounts'     },
-  { key: BILLS_KEY,             label: 'Bills',            icon: Lock,           type: 'settings'     },
-  { key: SETTINGS_KEY,          label: 'Settings',         icon: Settings2,      type: 'settings'     },
-  { key: 'orb_onboarding_done', label: 'Onboarding Flag',  icon: Key,            type: 'flag'         },
+  { key: SETTINGS_KEY,               label: 'App Settings',        icon: Settings2,   type: 'settings' },
+  { key: 'orb_env_vars_v1',          label: 'ENV Variables',       icon: FileCode2,   type: 'array'    },
+  { key: 'orb_vault_entries_v1',     label: 'Vault Entries',       icon: ShieldCheck, type: 'array'    },
+  { key: 'orb_prompts_v1',           label: 'AI Prompts',          icon: BrainCircuit,type: 'array'    },
+  { key: 'orb_pin_meta_v1',          label: 'PIN Metadata',        icon: Key,         type: 'settings' },
+  { key: 'orb_dev_logs_v1',          label: 'Dev Logs',            icon: Lock,        type: 'array'    },
 ]
 
 function getStorageRow(meta: typeof LS_KEY_META[0]) {
@@ -491,8 +472,11 @@ const inspectorView = ref<'pretty'|'raw'>('pretty')
 function openInspector(row: ReturnType<typeof getStorageRow>) {
   if (!row.raw) { orbLog(`Inspector: ${row.label} is empty`); return }
   let parsed: any = null, parsedType = row.type, prettyRaw = row.raw
-  try { parsed = JSON.parse(row.raw); prettyRaw = JSON.stringify(parsed, null, 2) }
-  catch { parsed = row.raw; parsedType = 'flag' }
+  try {
+    parsed = JSON.parse(row.raw)
+    prettyRaw = JSON.stringify(parsed, null, 2)
+    if (Array.isArray(parsed)) parsedType = 'array'
+  } catch { parsed = row.raw; parsedType = 'flag' }
   inspector.value = { key: row.key, label: row.label, size: row.size, raw: row.raw, prettyRaw, parsedType, parsed }
   inspectorView.value = 'pretty'
 }

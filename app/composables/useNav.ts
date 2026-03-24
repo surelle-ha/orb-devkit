@@ -5,19 +5,29 @@ export type PageId =
   | 'home' | 'env' | 'grocery' | 'bills' | 'more'
   | 'settings' | 'developer' | 'orb' | 'transactions'
   | 'profile' | 'randomizer' | 'about'
-  | 'prompts' | 'passwords' | 'vibecode'
+  | 'prompts' | 'passwords' | 'vibecode' | 'devices'
 
-const TAB_ORDER: PageId[] = ['home', 'env', 'grocery', 'bills', 'more']
+const TAB_ORDER: PageId[] = ['home', 'env', 'more', 'devices']
 
 const activePage     = ref<PageId>('home')
 const transitionName = ref<'slide-left' | 'slide-right'>('slide-left')
 
+// Expose a way for pages to pass params (e.g. which device to highlight)
+const navParams = ref<Record<string, any>>({})
+
 export function useNav() {
-  function navigate(to: PageId) {
+  function navigate(to: PageId, params?: Record<string, any>) {
     const from = TAB_ORDER.indexOf(activePage.value)
     const dest = TAB_ORDER.indexOf(to)
     transitionName.value = dest >= from || dest === -1 ? 'slide-left' : 'slide-right'
     activePage.value = to
+    navParams.value  = params ?? {}
   }
-  return { activePage: readonly(activePage), transitionName: readonly(transitionName), navigate, TAB_ORDER }
+  return {
+    activePage:     readonly(activePage),
+    transitionName: readonly(transitionName),
+    navParams:      readonly(navParams),
+    navigate,
+    TAB_ORDER,
+  }
 }
