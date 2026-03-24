@@ -34,17 +34,14 @@
           class="relative -mt-5 w-13 h-13 flex items-center justify-center active:scale-90 transition-all duration-200"
           style="width:52px;height:52px;border-radius:50%;">
 
-          <!-- Outer pulse ring when connected -->
           <div v-if="tcpConnected" class="absolute inset-0 rounded-full tcp-pulse-ring"
             :style="{ border: `1px solid ${accent}66` }"></div>
 
-          <!-- Button face -->
           <div class="w-full h-full rounded-full flex items-center justify-center"
             :style="tcpConnected
               ? { background: `radial-gradient(circle at 38% 32%, #1a1a2e, #000)`, boxShadow: `0 0 0 3px #060810, 0 0 0 4.5px ${accent}88, 0 0 24px ${accent}66` }
               : { background: `radial-gradient(circle at 38% 32%, #18181b, #09090b)`, boxShadow: `0 0 0 3px #060810, 0 0 0 4.5px rgba(255,255,255,0.08)` }">
 
-            <!-- Connected: accent glow -->
             <div v-if="tcpConnected" class="absolute inset-0 rounded-full"
               :style="{ background: `radial-gradient(circle at 28% 26%, ${accent}2E 0%, transparent 55%)` }"></div>
 
@@ -98,6 +95,9 @@ import Env      from '../pages/env.vue'
 import More     from '../pages/more.vue'
 import Settings from '../pages/settings.vue'
 import Developer from '../pages/developer.vue'
+import Prompts  from '../pages/prompts.vue'
+import Passwords from '../pages/passwords.vue'
+import Vibecode  from '../pages/vibecode.vue'
 
 const { activePage, transitionName, navigate, TAB_ORDER } = useNav()
 const accent = computed(() => settings.value.accentColor)
@@ -107,13 +107,18 @@ const TAB_PAGES = new Set(['home', 'env', 'grocery', 'bills', 'more'])
 const isTabPage = computed(() => TAB_PAGES.has(activePage.value))
 
 const PAGE_MAP: Record<string, any> = {
-  home: Index,
-  env: Env,
-  more: More,
-  settings: Settings,
+  home:      Index,
+  env:       Env,
+  more:      More,
+  settings:  Settings,
   developer: Developer,
+  prompts:   Prompts,
+  passwords: Passwords,
+  vibecode:  Vibecode,
+  // 'about' redirected to 'more' — no About.vue needed
+  about:     More,
 }
-const currentPage = computed(() => PAGE_MAP[activePage.value])
+const currentPage = computed(() => PAGE_MAP[activePage.value] ?? More)
 
 const leftTabs = [
   { id: 'home',  icon: Home,      label: 'home' },

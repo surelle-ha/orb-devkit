@@ -5,6 +5,7 @@ export type PageId =
   | 'home' | 'env' | 'grocery' | 'bills' | 'more'
   | 'settings' | 'developer' | 'orb' | 'transactions'
   | 'profile' | 'randomizer' | 'about'
+  | 'prompts' | 'passwords' | 'vibecode'
 
 const TAB_ORDER: PageId[] = ['home', 'env', 'grocery', 'bills', 'more']
 

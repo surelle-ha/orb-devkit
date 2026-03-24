@@ -4,7 +4,7 @@
     <!-- ── Topbar ── -->
     <div class="flex items-center justify-between px-5 pt-6 pb-3">
       <div>
-        <p class="text-[10px] font-mono text-zinc-600 tracking-[0.25em] uppercase">orb devkit / v2.4.1</p>
+        <p class="text-[10px] font-mono text-zinc-600 tracking-[0.25em] uppercase">orb devkit</p>
         <h1 class="text-[22px] font-black text-zinc-50 tracking-tight mt-0.5 font-mono">
           <span :style="{ color: accent }">›</span> dashboard
         </h1>
@@ -25,7 +25,7 @@
       </div>
     </div>
 
-    <!-- ── ORB CORE CARD — adapts to balanceStyle setting ── -->
+    <!-- ── ORB CORE CARD ── -->
 
     <!-- supreme -->
     <div v-if="balanceStyle === 'supreme'"
@@ -43,8 +43,7 @@
           <div class="w-2 h-2 rounded-full bg-emerald-400 opacity-70"></div>
           <span class="text-[10px] font-mono text-zinc-700 ml-2 tracking-widest">core.runtime</span>
         </div>
-        <!-- Dev Mode quick toggle -->
-        <button @click="toggleDevMode"
+        <button @click="confirmDevMode"
           class="flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all active:scale-95"
           :style="devMode
             ? { background:`${accent}20`, border:`1px solid ${accent}44` }
@@ -55,19 +54,24 @@
           </span>
         </button>
       </div>
-      <button @click="toggleDevMode" class="relative w-full flex flex-col items-center pt-2 pb-3 active:scale-[0.97] transition-transform duration-200">
+
+      <!-- Supreme orb area with twin TCP orb -->
+      <button @click="confirmDevMode" class="relative w-full flex flex-col items-center pt-2 pb-3 active:scale-[0.97] transition-transform duration-200">
+        <!-- Accretion rings -->
         <div class="absolute pointer-events-none" style="top:62px;left:50%;transform:translateX(-50%);width:1px;height:1px;">
           <svg class="absolute orb-h-ring-4" style="width:310px;height:68px;margin-left:-155px;margin-top:-34px;overflow:visible;"><path d="M 1,34 A 154,33 0 0,1 309,34" fill="none" :stroke="accent+'10'" stroke-width="1" style="filter:blur(1px);" /></svg>
           <svg class="absolute orb-h-ring-3" style="width:254px;height:52px;margin-left:-127px;margin-top:-26px;overflow:visible;"><path d="M 1,26 A 126,25 0 0,1 253,26" fill="none" :stroke="accent+'20'" stroke-width="1" /></svg>
           <svg class="absolute orb-h-ring-2" style="width:200px;height:36px;margin-left:-100px;margin-top:-18px;overflow:visible;"><path d="M 1,18 A 99,17 0 0,1 199,18" fill="none" :stroke="accent+'40'" stroke-width="1.5" /></svg>
           <svg class="absolute orb-h-ring-1" style="width:144px;height:24px;margin-left:-72px;margin-top:-12px;overflow:visible;"><path d="M 1,12 A 71,11 0 0,1 143,12" fill="none" :stroke="accent+'75'" stroke-width="2" :style="{ filter:`drop-shadow(0 0 4px ${accent}66)` }" /></svg>
         </div>
+
         <div class="relative mt-1" style="width:88px;height:88px;">
           <div class="absolute rounded-full" :style="orbOuterGlow"></div>
           <div class="absolute rounded-full" :style="orbLensRing"></div>
           <div class="absolute inset-0 rounded-full" :style="orbSphereShadow"></div>
           <div class="absolute inset-0 rounded-full" :style="{ background:`radial-gradient(circle at 28% 26%, ${accent}2E 0%, transparent 55%)` }"></div>
         </div>
+
         <div class="absolute pointer-events-none" style="top:62px;left:50%;transform:translateX(-50%);width:1px;height:1px;">
           <svg class="absolute orb-h-ring-4" style="width:310px;height:68px;margin-left:-155px;margin-top:-34px;overflow:visible;"><path d="M 1,34 A 154,33 0 0,0 309,34" fill="none" :stroke="accent+'10'" stroke-width="1" style="filter:blur(1px);" /></svg>
           <svg class="absolute orb-h-ring-3" style="width:254px;height:52px;margin-left:-127px;margin-top:-26px;overflow:visible;"><path d="M 1,26 A 126,25 0 0,0 253,26" fill="none" :stroke="accent+'20'" stroke-width="1" /></svg>
@@ -76,11 +80,54 @@
           <div class="absolute rounded-full orb-h-p1" style="width:3px;height:3px;top:0;left:0;" :style="{ background:accent, opacity:0.9 }"></div>
           <div class="absolute rounded-full orb-h-p2" style="width:2px;height:2px;top:0;left:0;" :style="{ background:accent, opacity:0.7 }"></div>
         </div>
+
+        <!-- Twin TCP orb (appears 3s after TCP connects) -->
+        <Transition name="twin-orb">
+          <div v-if="showTwinOrb" class="absolute pointer-events-none twin-orb-container" style="top:10px;right:30px;">
+            <!-- Connection line SVG -->
+            <svg class="absolute" style="top:30px;right:44px;overflow:visible;pointer-events:none;" width="80" height="40">
+              <path :d="`M 80,0 C 50,0 30,20 0,20`" fill="none"
+                :stroke="accent" stroke-width="1"
+                stroke-dasharray="4 3"
+                style="opacity:0.5;animation:tcp-dash 1.2s linear infinite;" />
+              <circle cx="80" cy="0" r="2" :fill="accent" opacity="0.8" />
+            </svg>
+            <!-- Twin orb body -->
+            <div class="relative" style="width:40px;height:40px;">
+              <!-- Outer ring -->
+              <div class="absolute inset-0 rounded-full tcp-orb-ring"
+                :style="{ border: `1px solid ${accent}66` }"></div>
+              <!-- Inner ring -->
+              <div class="absolute rounded-full tcp-orb-ring-inner"
+                :style="{ inset:'4px', border: `0.5px solid ${accent}44` }"></div>
+              <!-- Glow -->
+              <div class="absolute rounded-full"
+                :style="{ inset:'8px', boxShadow:`0 0 10px 3px ${accent}55`, borderRadius:'50%' }"></div>
+              <!-- Core -->
+              <div class="absolute rounded-full"
+                style="inset:8px;background:radial-gradient(circle at 38% 32%,#1a1a2e 0%,#09090b 55%,#000 100%);"
+                :style="{ boxShadow:`inset 0 0 8px rgba(0,0,0,1)` }"></div>
+              <!-- Broken-lines data particles -->
+              <div v-for="p in tcpParticles" :key="p.id"
+                class="absolute rounded-full tcp-particle"
+                :style="{
+                  width: p.size + 'px', height: p.size + 'px',
+                  background: accent, opacity: p.opacity,
+                  animationDuration: p.dur + 's',
+                  animationDelay: p.delay + 's',
+                  top: p.startY + 'px', left: p.startX + 'px',
+                }"></div>
+            </div>
+            <p class="text-center mt-1.5 font-mono font-black text-[8px]" :style="{ color: accent + '88' }">desktop</p>
+          </div>
+        </Transition>
+
         <div class="relative mt-10 mx-5 px-3.5 py-1.5 rounded-xl text-center max-w-[280px]"
           style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
           <p class="text-[11px] font-mono leading-snug" style="color:rgba(255,255,255,0.4);">{{ orbStatusLine }}</p>
         </div>
       </button>
+
       <div class="relative grid grid-cols-3 gap-0 pb-4 px-5 mt-2">
         <div v-for="(m, i) in coreMetrics" :key="m.label"
           :class="['flex flex-col gap-0.5', i < 2 ? 'border-r border-white/5 pr-4' : 'pl-4']">
@@ -99,7 +146,7 @@
         :style="{ backgroundImage: `linear-gradient(${accent}40 1px, transparent 1px), linear-gradient(90deg, ${accent}40 1px, transparent 1px)`, backgroundSize: '40px 40px' }"></div>
       <div class="absolute top-0 left-0 right-0 h-px" :style="{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, boxShadow: `0 0 12px ${accent}` }"></div>
       <div class="absolute top-3 right-3 z-10">
-        <button @click="toggleDevMode"
+        <button @click="confirmDevMode"
           class="flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all active:scale-95"
           :style="devMode ? { background:`${accent}20`, border:`1px solid ${accent}44` } : { background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.1)' }">
           <div class="w-1.5 h-1.5 rounded-full" :style="{ background: devMode ? accent : '#3f3f46' }"></div>
@@ -108,7 +155,7 @@
           </span>
         </button>
       </div>
-      <button @click="toggleDevMode" class="relative w-full flex flex-col items-center pt-5 pb-3 active:scale-[0.97] transition-transform">
+      <button @click="confirmDevMode" class="relative w-full flex flex-col items-center pt-5 pb-3 active:scale-[0.97] transition-transform">
         <div class="relative" style="width:80px;height:80px;">
           <div class="absolute rounded-full" :style="{ inset:'-16px', background:`radial-gradient(circle, ${accent}38 0%, transparent 70%)`, filter:'blur(12px)' }"></div>
           <div class="absolute inset-0 rounded-full" :style="{ background:'radial-gradient(circle at 38% 32%,#1a1a2e 0%,#09090b 45%,#000 100%)', boxShadow:`inset 0 0 22px rgba(0,0,0,1), 0 0 0 1px ${accent}55, 0 0 24px ${accent}66` }"></div>
@@ -135,7 +182,7 @@
       <div class="absolute top-0 right-0 w-40 h-40 pointer-events-none rounded-full"
         :style="{ background: `radial-gradient(circle at 80% 0%, ${accent}20 0%, transparent 65%)`, filter:'blur(18px)' }"></div>
       <div class="flex items-center gap-4 px-5 py-4">
-        <button @click="toggleDevMode" class="flex-shrink-0 active:scale-90 transition-transform">
+        <button @click="confirmDevMode" class="flex-shrink-0 active:scale-90 transition-transform">
           <div class="relative" style="width:48px;height:48px;">
             <div class="absolute inset-0 rounded-full" :style="{ background:`radial-gradient(circle, ${accent}44 0%, transparent 70%)`, filter:'blur(6px)' }"></div>
             <div class="absolute rounded-full" style="inset:4px;background:radial-gradient(circle at 38% 32%,#1a1a2e 0%,#09090b 60%,#000 100%);" :style="{ boxShadow:`0 0 10px 2px ${accent}55, inset 0 0 8px rgba(0,0,0,0.9)` }"></div>
@@ -145,7 +192,7 @@
           <p class="text-[11px] font-mono font-bold uppercase tracking-widest" :style="{ color: accent + 'AA' }">orb devkit core</p>
           <p class="text-[13px] font-mono text-zinc-400 mt-0.5 truncate">{{ orbStatusLine }}</p>
         </div>
-        <button @click="toggleDevMode"
+        <button @click="confirmDevMode"
           class="flex-shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-mono font-bold active:scale-95 transition-transform flex items-center gap-1.5"
           :style="devMode
             ? { background: accent + '18', border: `1px solid ${accent}33`, color: accent }
@@ -171,7 +218,7 @@
       <div class="absolute -top-10 -right-10 w-48 h-48 rounded-full pointer-events-none"
         :style="{ background: `radial-gradient(circle, ${accent}25 0%, transparent 70%)`, filter:'blur(20px)' }"></div>
       <div class="absolute top-3 right-3 z-10">
-        <button @click="toggleDevMode"
+        <button @click="confirmDevMode"
           class="flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all active:scale-95"
           :style="devMode ? { background:`${accent}20`, border:`1px solid ${accent}44` } : { background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)' }">
           <div class="w-1.5 h-1.5 rounded-full" :style="{ background: devMode ? accent : 'rgba(255,255,255,0.2)' }"></div>
@@ -180,7 +227,7 @@
           </span>
         </button>
       </div>
-      <button @click="navigate('orb')" class="relative w-full flex flex-col items-center pt-5 pb-3 active:scale-[0.97] transition-transform">
+      <button @click="confirmDevMode" class="relative w-full flex flex-col items-center pt-5 pb-3 active:scale-[0.97] transition-transform">
         <div class="relative" style="width:80px;height:80px;">
           <div class="absolute rounded-full" :style="{ inset:'-12px', background:`radial-gradient(circle, ${accent}25 0%, transparent 65%)`, filter:'blur(10px)' }"></div>
           <div class="absolute inset-0 rounded-full" style="background:radial-gradient(circle at 38% 32%,#1a1a2e 0%,#09090b 45%,#000 100%);" :style="{ boxShadow:`inset 0 0 22px rgba(0,0,0,1), 0 0 0 1px rgba(255,255,255,0.15)` }"></div>
@@ -253,26 +300,46 @@
         </div>
       </button>
 
-      <!-- Wifi Speedtest -->
-      <button @click="navigate('more')"
+      <!-- Password Manager -->
+      <button @click="navigate('passwords')"
         class="devtool-card flex items-center gap-4 px-4 py-4 rounded-2xl active:scale-[0.98] transition-all"
         :style="{ background: `rgba(${accentRgb},0.06)`, border: `1px solid rgba(${accentRgb},0.15)` }">
         <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
           :style="{ background: `rgba(${accentRgb},0.12)`, border: `1px solid rgba(${accentRgb},0.25)` }">
-          <Wifi :size="22" :style="{ color: accent }" :stroke-width="1.8" />
+          <ShieldCheck :size="22" :style="{ color: accent }" :stroke-width="1.8" />
         </div>
         <div class="flex-1 min-w-0 text-left">
-          <p class="text-[15px] font-black text-zinc-100 font-mono mb-0.5">Wifi Speedtest</p>
-          <p class="text-[11px] font-mono text-zinc-500 leading-snug">Measure download, upload &amp; ping latency</p>
+          <p class="text-[15px] font-black text-zinc-100 font-mono mb-0.5">Password Manager</p>
+          <p class="text-[11px] font-mono text-zinc-500 leading-snug">Self-hosted account &amp; credential vault</p>
         </div>
         <div class="flex-shrink-0 flex flex-col items-end gap-1">
-          <span class="text-[14px] font-black font-mono" :style="{ color: accent }">{{ lastSpeed }}</span>
-          <span class="text-[9px] font-mono text-zinc-700">Mbps</span>
+          <span class="text-[14px] font-black font-mono" :style="{ color: accent }">{{ vaultCount }}</span>
+          <span class="text-[9px] font-mono text-zinc-700">entries</span>
+        </div>
+      </button>
+
+      <!-- Vibecode Therapy -->
+      <button @click="navigate('vibecode')"
+        class="devtool-card flex items-center gap-4 px-4 py-4 rounded-2xl active:scale-[0.98] transition-all"
+        style="background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.18);">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+          style="background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.25);">
+          <Brain :size="22" style="color:#c084fc" :stroke-width="1.8" />
+        </div>
+        <div class="flex-1 min-w-0 text-left">
+          <div class="flex items-center gap-2 mb-0.5">
+            <p class="text-[15px] font-black text-zinc-100 font-mono">Vibecode Therapy</p>
+          </div>
+          <p class="text-[11px] font-mono text-zinc-500 leading-snug">Block all AI platforms · focus sessions</p>
+        </div>
+        <div class="flex-shrink-0 flex flex-col items-end gap-1">
+          <span class="text-[14px] font-black font-mono" style="color:#c084fc">{{ focusStreak }}🔥</span>
+          <span class="text-[9px] font-mono text-zinc-700">streak</span>
         </div>
       </button>
 
       <!-- AI Prompt Manager -->
-      <button @click="navigate('orb')"
+      <button @click="navigate('prompts')"
         class="devtool-card flex items-center gap-4 px-4 py-4 rounded-2xl active:scale-[0.98] transition-all"
         style="background:rgba(139,92,246,0.07);border:1px solid rgba(139,92,246,0.18);">
         <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
@@ -286,6 +353,24 @@
         <div class="flex-shrink-0 flex flex-col items-end gap-1">
           <span class="text-[14px] font-black font-mono" style="color:#a78bfa">{{ promptCount }}</span>
           <span class="text-[9px] font-mono text-zinc-700">prompts</span>
+        </div>
+      </button>
+
+      <!-- Wifi Speedtest -->
+      <button @click="navigate('more')"
+        class="devtool-card flex items-center gap-4 px-4 py-4 rounded-2xl active:scale-[0.98] transition-all"
+        style="background:rgba(96,165,250,0.07);border:1px solid rgba(96,165,250,0.15);">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+          style="background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.25);">
+          <Wifi :size="22" style="color:#60a5fa" :stroke-width="1.8" />
+        </div>
+        <div class="flex-1 min-w-0 text-left">
+          <p class="text-[15px] font-black text-zinc-100 font-mono mb-0.5">Wifi Speedtest</p>
+          <p class="text-[11px] font-mono text-zinc-500 leading-snug">Measure download, upload &amp; ping latency</p>
+        </div>
+        <div class="flex-shrink-0 flex flex-col items-end gap-1">
+          <span class="text-[14px] font-black font-mono text-blue-400">{{ lastSpeed }}</span>
+          <span class="text-[9px] font-mono text-zinc-700">Mbps</span>
         </div>
       </button>
     </div>
@@ -337,6 +422,45 @@
     <div class="h-4"></div>
   </div>
 
+  <!-- ── Dev Mode Confirm Overlay ── -->
+  <Teleport to="body">
+    <Transition name="fade">
+      <div v-if="showDevConfirm"
+        class="fixed inset-0 z-[400] flex items-end justify-center"
+        style="background:rgba(0,0,0,0.7);backdrop-filter:blur(14px)"
+        @click.self="showDevConfirm = false">
+        <div class="w-full max-w-[430px] rounded-t-[28px] border-t pb-10 px-5 pt-5"
+          :style="{ background: '#0e0b1e', borderColor: accent + '33' }">
+          <div class="w-10 h-1 rounded-full mx-auto mb-5" :style="{ background: accent + '44' }"></div>
+          <div class="flex justify-center mb-4">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center"
+              :style="{ background: accent + '18', border: `1px solid ${accent}33` }">
+              <Code2 :size="26" :style="{ color: accent }" :stroke-width="1.8" />
+            </div>
+          </div>
+          <p class="text-[18px] font-black text-center mb-2 text-zinc-100">
+            {{ devMode ? 'Disable Dev Mode?' : 'Enable Dev Mode?' }}
+          </p>
+          <p class="text-[13px] text-center leading-relaxed mb-6 text-zinc-500">
+            {{ devMode
+              ? 'This will disable extended logging, debug overlays, and disconnect TCP.'
+              : 'This enables hot reload, extended logs, debug overlays, and auto-starts TCP connection.' }}
+          </p>
+          <button @click="executeDevToggle"
+            class="w-full py-4 rounded-2xl text-[16px] font-black active:scale-[0.98] mb-3 transition-all"
+            :style="{ background: accent, color:'white', boxShadow:`0 8px 32px ${accent}44` }">
+            {{ devMode ? 'Yes, disable' : 'Yes, enable dev mode' }}
+          </button>
+          <button @click="showDevConfirm = false"
+            class="w-full py-3.5 rounded-2xl text-[15px] font-bold active:scale-[0.98] text-zinc-400"
+            :style="{ background: accent + '12' }">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
   <!-- Orb expand overlay -->
   <Teleport to="body">
     <Transition name="orb-expand">
@@ -352,8 +476,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { Settings, Wifi, Network, KeyRound, BrainCircuit, Code2 } from 'lucide-vue-next'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { Settings, Wifi, Network, KeyRound, BrainCircuit, Code2, Brain, ShieldCheck } from 'lucide-vue-next'
 import { useNav }    from '../composables/useNav'
 import { settings, orbLog } from '../composables/useStore'
 import { tcpConnected, tcpPort, toggleTcp } from '../composables/useTcp'
@@ -367,21 +491,25 @@ const accentRgb = computed(() => {
   return `${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)}`
 })
 
-// ── Dev Mode ──────────────────────────────────────────────
-const DEV_MODE_KEY = 'orb_dev_mode_v1'
+// ── Dev Mode with confirmation ────────────────────────────
+const DEV_MODE_KEY    = 'orb_dev_mode_v1'
+const showDevConfirm  = ref(false)
 const devMode = ref((() => {
   try { return localStorage.getItem(DEV_MODE_KEY) === 'true' } catch { return false }
 })())
 const devSessionStart = ref(Date.now())
 const devSessionTime  = ref('00:00')
-
 let devTimer: ReturnType<typeof setInterval> | null = null
 
-function toggleDevMode() {
+function confirmDevMode() {
+  showDevConfirm.value = true
+}
+
+function executeDevToggle() {
+  showDevConfirm.value = false
   devMode.value = !devMode.value
   try { localStorage.setItem(DEV_MODE_KEY, devMode.value ? 'true' : 'false') } catch {}
 
-  // Sync TCP: dev mode on → TCP on; dev mode off → TCP off
   if (devMode.value) {
     if (!tcpConnected.value) toggleTcp()
     devSessionStart.value = Date.now()
@@ -409,15 +537,62 @@ function stopDevTimer() {
   devSessionTime.value = '00:00'
 }
 
-// ── Dev data ──────────────────────────────────────────────
+// ── Twin TCP orb (supreme only) ────────────────────────────
+const showTwinOrb = ref(false)
+let twinOrbTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(tcpConnected, (connected) => {
+  if (twinOrbTimer) clearTimeout(twinOrbTimer)
+  if (connected && balanceStyle.value === 'supreme') {
+    twinOrbTimer = setTimeout(() => { showTwinOrb.value = true }, 3000)
+  } else {
+    showTwinOrb.value = false
+  }
+}, { immediate: true })
+
+const tcpParticles = [
+  { id:1, size:2,   opacity:0.8, dur:1.8, delay:0,    startX:15, startY:15 },
+  { id:2, size:1.5, opacity:0.6, dur:2.2, delay:0.4,  startX:20, startY:20 },
+  { id:3, size:2,   opacity:0.7, dur:1.5, delay:0.8,  startX:10, startY:25 },
+]
+
+// ── Counts from localStorage ───────────────────────────────
+const vaultCount = computed(() => {
+  try {
+    const r = localStorage.getItem('orb_vault_entries_v1')
+    return r ? JSON.parse(r).length : 0
+  } catch { return 0 }
+})
+
+const promptCount = computed(() => {
+  try {
+    const r = localStorage.getItem('orb_prompts_v1')
+    return r ? JSON.parse(r).length : 7
+  } catch { return 7 }
+})
+
+const focusStreak = computed(() => {
+  try {
+    const r = localStorage.getItem('orb_vibecode_history_v1')
+    if (!r) return 0
+    const history = JSON.parse(r) as Array<{ completedAt: string }>
+    const days = new Set(history.map(s => new Date(s.completedAt).toDateString()))
+    let count = 0
+    const d = new Date()
+    while (days.has(d.toDateString())) { count++; d.setDate(d.getDate() - 1) }
+    return count
+  } catch { return 0 }
+})
+
+// ── Device connected count ─────────────────────────────────
+const deviceCount = computed(() => tcpConnected.value ? 1 : 0)
+
+// ── Orb data ──────────────────────────────────────────────
 const envVarCount = ref(12)
 const lastSpeed   = ref('—')
-const promptCount = ref(7)
-
-// ── Orb expand ────────────────────────────────────────────
 const orbExpanding = ref(false)
 
-// ── Orb style objects ─────────────────────────────────────
+// ── Orb styles ─────────────────────────────────────────────
 const orbOuterGlow    = computed(() => ({ inset:'-20px', background:`radial-gradient(circle, ${accent.value}38 0%, transparent 70%)`, filter:'blur(14px)' }))
 const orbLensRing     = computed(() => ({ inset:'-8px', border:`1px solid ${accent.value}4D`, boxShadow:`0 0 20px 6px ${accent.value}29` }))
 const orbSphereShadow = computed(() => ({ background:'radial-gradient(circle at 38% 32%,#1a1a2e 0%,#09090b 45%,#000 100%)', boxShadow:`inset 0 0 22px rgba(0,0,0,1), 0 0 0 1px ${accent.value}59` }))
@@ -435,10 +610,10 @@ const coreMetrics = computed(() => [
     color: tcpConnected.value ? '#34d399' : '#ef4444',
   },
   {
-    label: 'env_vars',
-    value: String(envVarCount.value),
-    sub:   'pocket env',
-    color: accent.value,
+    label: 'device_conn',
+    value: tcpConnected.value ? '1' : '0',
+    sub:   tcpConnected.value ? 'desktop linked' : 'no device',
+    color: tcpConnected.value ? accent.value : '#3f3f46',
   },
   {
     label: 'dev_mode',
@@ -451,7 +626,6 @@ const coreMetrics = computed(() => [
 // ── Starfield ─────────────────────────────────────────────
 const starsCanvas = ref<HTMLCanvasElement | null>(null)
 let animFrame = 0
-
 interface Star { x:number; y:number; r:number; a:number; da:number; dx:number; dy:number }
 
 function initStarfield(canvas: HTMLCanvasElement) {
@@ -484,7 +658,7 @@ onMounted(() => {
   if (devMode.value) startDevTimer()
   nextTick(() => { requestAnimationFrame(() => { const c = starsCanvas.value; if(c&&c.clientWidth>0) initStarfield(c) }) })
 })
-onUnmounted(() => { cancelAnimationFrame(animFrame); stopDevTimer() })
+onUnmounted(() => { cancelAnimationFrame(animFrame); stopDevTimer(); if (twinOrbTimer) clearTimeout(twinOrbTimer) })
 </script>
 
 <style scoped>
@@ -513,6 +687,30 @@ onUnmounted(() => { cancelAnimationFrame(animFrame); stopDevTimer() })
 .orb-h-ring-4{animation:orb-h-spin-ccw 50s linear infinite;transform-origin:155px 34px}
 .orb-h-p1{animation:orb-h-orbit-1 4s linear infinite}
 .orb-h-p2{animation:orb-h-orbit-2 7s linear infinite}
+
+/* Twin TCP orb */
+.twin-orb-container { position:absolute; }
+@keyframes tcp-orb-cw   { from{transform:rotate(0deg)}   to{transform:rotate(360deg)}  }
+@keyframes tcp-orb-ccw  { from{transform:rotate(360deg)} to{transform:rotate(0deg)}    }
+@keyframes tcp-particle-move {
+  0%   { transform:translateX(0)   translateY(0);   opacity:0.8; }
+  50%  { transform:translateX(-30px) translateY(-20px); opacity:0.3; }
+  100% { transform:translateX(-60px) translateY(-10px); opacity:0;   }
+}
+@keyframes tcp-dash { to { stroke-dashoffset:-14; } }
+.tcp-orb-ring       { animation:tcp-orb-cw  6s linear infinite;  }
+.tcp-orb-ring-inner { animation:tcp-orb-ccw 9s linear infinite; }
+.tcp-particle       { animation:tcp-particle-move linear infinite; position:absolute; }
+
+.twin-orb-enter-active { transition: all 0.6s cubic-bezier(0.34, 1.1, 0.64, 1); }
+.twin-orb-leave-active { transition: all 0.3s ease; }
+.twin-orb-enter-from   { opacity: 0; transform: scale(0.3) translateY(20px); }
+.twin-orb-leave-to     { opacity: 0; transform: scale(0.3); }
+
+/* Dev mode confirm */
+.fade-enter-active,.fade-leave-active { transition: opacity .25s ease; }
+.fade-enter-from,.fade-leave-to { opacity: 0; }
+
 .orb-expand-enter-active{animation:orb-burst .65s cubic-bezier(.22,1,.36,1) forwards}
 .orb-expand-leave-active{transition:opacity .2s ease}
 .orb-expand-leave-to{opacity:0}

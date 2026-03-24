@@ -43,7 +43,7 @@ export interface Settings {
 const DEFAULT_SETTINGS: Settings = {
   currency: 'USD', currencySymbol: '$', shakeToAdd: true,
   idleLockEnabled: false, idleLockMinutes: 5,
-  accentColor: '#8b5cf6',
+  accentColor: '#ef4444', // ← RED default
   userName: '',
   balanceStyle: 'supreme',
   customCategories: [],
@@ -68,18 +68,18 @@ export function saveSettings(patch: Partial<Settings>) {
 }
 
 export const ACCENT_COLORS = [
+  { label: 'Red',     hex: '#ef4444' },
+  { label: 'Rose',    hex: '#f43f5e' },
+  { label: 'Orange',  hex: '#f97316' },
+  { label: 'Amber',   hex: '#f59e0b' },
+  { label: 'Emerald', hex: '#10b981' },
+  { label: 'Teal',    hex: '#14b8a6' },
+  { label: 'Cyan',    hex: '#06b6d4' },
+  { label: 'Blue',    hex: '#3b82f6' },
+  { label: 'Indigo',  hex: '#6366f1' },
   { label: 'Violet',  hex: '#8b5cf6' },
   { label: 'Purple',  hex: '#a855f7' },
-  { label: 'Indigo',  hex: '#6366f1' },
-  { label: 'Blue',    hex: '#3b82f6' },
-  { label: 'Cyan',    hex: '#06b6d4' },
-  { label: 'Teal',    hex: '#14b8a6' },
-  { label: 'Emerald', hex: '#10b981' },
-  { label: 'Rose',    hex: '#f43f5e' },
   { label: 'Pink',    hex: '#ec4899' },
-  { label: 'Amber',   hex: '#f59e0b' },
-  { label: 'Orange',  hex: '#f97316' },
-  { label: 'Red',     hex: '#ef4444' },
 ]
 
 export const CURRENCIES = [

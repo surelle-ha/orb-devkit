@@ -68,9 +68,8 @@
       </button>
     </div>
 
-    <!-- Orb Tech card -->
-    <button @click="navigate('about')"
-      class="mx-4 rounded-2xl px-4 py-4 flex items-center gap-3 active:scale-[0.98] transition-transform"
+    <!-- Orb Tech card — shows info inline, no navigation needed -->
+    <div class="mx-4 rounded-2xl px-4 py-4 flex items-center gap-3"
       style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);width:calc(100% - 32px);">
       <div class="relative flex-shrink-0" style="width:40px;height:40px;">
         <div class="absolute inset-0 rounded-full" :style="orbCardRing"></div>
@@ -80,8 +79,12 @@
         <p class="text-[14px] font-black font-mono text-zinc-100">Orb Tech</p>
         <p class="text-[11px] font-mono text-zinc-600">Developer Toolkit · v1.0</p>
       </div>
-      <ChevronRight :size="15" class="text-zinc-700 flex-shrink-0" :stroke-width="2" />
-    </button>
+      <div class="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl"
+        :style="{ background: accent + '12', border: `1px solid ${accent}22` }">
+        <div class="w-1.5 h-1.5 rounded-full" :style="{ background: accent }"></div>
+        <span class="text-[10px] font-mono font-bold" :style="{ color: accent }">active</span>
+      </div>
+    </div>
 
     <div class="h-4"></div>
   </div>
@@ -112,13 +115,13 @@ const orbCardCore = computed(() => ({
 }))
 
 const navCards = [
-  { icon: FileCode2, label: '.env',     page: 'env'       },
-  { icon: Wifi,      label: 'speedtest', page: 'more'     },
-  { icon: Network,   label: 'tcp',       page: 'more'     },
+  { icon: FileCode2, label: '.env',     page: 'env'   as const  },
+  { icon: Wifi,      label: 'speedtest', page: 'more' as const  },
+  { icon: Network,   label: 'tcp',       page: 'more' as const  },
 ]
 
 const tools = [
-  { icon: Settings,  label: 'Settings', sub: 'Preferences & appearance', page: 'settings', badge: null  },
+  { icon: Settings, label: 'Settings', sub: 'Preferences & appearance', page: 'settings' as const, badge: null },
 ]
 </script>
 
