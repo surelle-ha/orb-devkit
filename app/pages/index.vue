@@ -55,7 +55,7 @@
           </span>
         </button>
       </div>
-      <button @click="navigate('orb')" class="relative w-full flex flex-col items-center pt-2 pb-3 active:scale-[0.97] transition-transform duration-200">
+      <button @click="toggleDevMode" class="relative w-full flex flex-col items-center pt-2 pb-3 active:scale-[0.97] transition-transform duration-200">
         <div class="absolute pointer-events-none" style="top:62px;left:50%;transform:translateX(-50%);width:1px;height:1px;">
           <svg class="absolute orb-h-ring-4" style="width:310px;height:68px;margin-left:-155px;margin-top:-34px;overflow:visible;"><path d="M 1,34 A 154,33 0 0,1 309,34" fill="none" :stroke="accent+'10'" stroke-width="1" style="filter:blur(1px);" /></svg>
           <svg class="absolute orb-h-ring-3" style="width:254px;height:52px;margin-left:-127px;margin-top:-26px;overflow:visible;"><path d="M 1,26 A 126,25 0 0,1 253,26" fill="none" :stroke="accent+'20'" stroke-width="1" /></svg>
@@ -109,7 +109,7 @@
           </span>
         </button>
       </div>
-      <button @click="navigate('orb')" class="relative w-full flex flex-col items-center pt-5 pb-3 active:scale-[0.97] transition-transform">
+      <button @click="toggleDevMode" class="relative w-full flex flex-col items-center pt-5 pb-3 active:scale-[0.97] transition-transform">
         <div class="relative" style="width:80px;height:80px;">
           <div class="absolute rounded-full" :style="{ inset:'-16px', background:`radial-gradient(circle, ${accent}38 0%, transparent 70%)`, filter:'blur(12px)' }"></div>
           <div class="absolute inset-0 rounded-full" :style="{ background:'radial-gradient(circle at 38% 32%,#1a1a2e 0%,#09090b 45%,#000 100%)', boxShadow:`inset 0 0 22px rgba(0,0,0,1), 0 0 0 1px ${accent}55, 0 0 24px ${accent}66` }"></div>
@@ -136,7 +136,7 @@
       <div class="absolute top-0 right-0 w-40 h-40 pointer-events-none rounded-full"
         :style="{ background: `radial-gradient(circle at 80% 0%, ${accent}20 0%, transparent 65%)`, filter:'blur(18px)' }"></div>
       <div class="flex items-center gap-4 px-5 py-4">
-        <button @click="navigate('orb')" class="flex-shrink-0 active:scale-90 transition-transform">
+        <button @click="toggleDevMode" class="flex-shrink-0 active:scale-90 transition-transform">
           <div class="relative" style="width:48px;height:48px;">
             <div class="absolute inset-0 rounded-full" :style="{ background:`radial-gradient(circle, ${accent}44 0%, transparent 70%)`, filter:'blur(6px)' }"></div>
             <div class="absolute rounded-full" style="inset:4px;background:radial-gradient(circle at 38% 32%,#1a1a2e 0%,#09090b 60%,#000 100%);" :style="{ boxShadow:`0 0 10px 2px ${accent}55, inset 0 0 8px rgba(0,0,0,0.9)` }"></div>
@@ -390,6 +390,7 @@ let devTimer: ReturnType<typeof setInterval> | null = null
 function toggleDevMode() {
   devMode.value = !devMode.value
   try { localStorage.setItem(DEV_MODE_KEY, devMode.value ? 'true' : 'false') } catch {}
+  toggleTcp()
   if (devMode.value) {
     devSessionStart.value = Date.now()
     startDevTimer()
@@ -430,7 +431,7 @@ const orbSphereShadow = computed(() => ({ background:'radial-gradient(circle at 
 
 const orbStatusLine = computed(() => {
   if (devMode.value) return `dev_mode · active · ${devSessionTime.value}`
-  return tcpConnected.value ? `tcp_live · 127.0.0.1:${tcpPort.value}` : 'tap to open ai_chat'
+  return tcpConnected.value ? `tcp_live · 127.0.0.1:${tcpPort.value}` : 'tap to start dev_mode'
 })
 
 const coreMetrics = computed(() => [

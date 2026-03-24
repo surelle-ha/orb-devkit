@@ -33,15 +33,16 @@ export interface Settings {
   currencySymbol:   string
   shakeToAdd:       boolean
   idleLockEnabled:  boolean
-  idleLockMinutes:  number   // 1–60
-  accentColor:      string   // CSS hex
+  idleLockMinutes:  number
+  accentColor:      string
   userName:         string
   balanceStyle:     'supreme' | 'minimal' | 'neon' | 'glass'
-  customCategories: string[] // user-added expense categories
+  customCategories: string[]
 }
+
 const DEFAULT_SETTINGS: Settings = {
-  currency:'USD', currencySymbol:'$', shakeToAdd:true,
-  idleLockEnabled:false, idleLockMinutes:5,
+  currency: 'USD', currencySymbol: '$', shakeToAdd: true,
+  idleLockEnabled: false, idleLockMinutes: 5,
   accentColor: '#8b5cf6',
   userName: '',
   balanceStyle: 'supreme',
@@ -49,14 +50,17 @@ const DEFAULT_SETTINGS: Settings = {
 }
 
 function loadSettings(): Settings {
-  try { const r = localStorage.getItem(SETTINGS_KEY); if (r) return { ...DEFAULT_SETTINGS, ...JSON.parse(r) } } catch {}
+  try {
+    const r = localStorage.getItem(SETTINGS_KEY)
+    if (r) return { ...DEFAULT_SETTINGS, ...JSON.parse(r) }
+  } catch {}
   return { ...DEFAULT_SETTINGS }
 }
 export const settings = ref<Settings>(loadSettings())
 
 watch(settings, v => {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(v)) } catch {}
-}, { deep:true })
+}, { deep: true })
 
 export function saveSettings(patch: Partial<Settings>) {
   settings.value = { ...settings.value, ...patch }
@@ -64,38 +68,38 @@ export function saveSettings(patch: Partial<Settings>) {
 }
 
 export const ACCENT_COLORS = [
-  { label:'Violet',  hex:'#8b5cf6' },
-  { label:'Purple',  hex:'#a855f7' },
-  { label:'Indigo',  hex:'#6366f1' },
-  { label:'Blue',    hex:'#3b82f6' },
-  { label:'Cyan',    hex:'#06b6d4' },
-  { label:'Teal',    hex:'#14b8a6' },
-  { label:'Emerald', hex:'#10b981' },
-  { label:'Rose',    hex:'#f43f5e' },
-  { label:'Pink',    hex:'#ec4899' },
-  { label:'Amber',   hex:'#f59e0b' },
-  { label:'Orange',  hex:'#f97316' },
-  { label:'Red',     hex:'#ef4444' },
+  { label: 'Violet',  hex: '#8b5cf6' },
+  { label: 'Purple',  hex: '#a855f7' },
+  { label: 'Indigo',  hex: '#6366f1' },
+  { label: 'Blue',    hex: '#3b82f6' },
+  { label: 'Cyan',    hex: '#06b6d4' },
+  { label: 'Teal',    hex: '#14b8a6' },
+  { label: 'Emerald', hex: '#10b981' },
+  { label: 'Rose',    hex: '#f43f5e' },
+  { label: 'Pink',    hex: '#ec4899' },
+  { label: 'Amber',   hex: '#f59e0b' },
+  { label: 'Orange',  hex: '#f97316' },
+  { label: 'Red',     hex: '#ef4444' },
 ]
 
 export const CURRENCIES = [
-  { code:'USD', symbol:'$',  label:'US Dollar'         },
-  { code:'PHP', symbol:'₱',  label:'Philippine Peso'  },
-  { code:'EUR', symbol:'€',  label:'Euro'              },
-  { code:'GBP', symbol:'£',  label:'British Pound'     },
-  { code:'JPY', symbol:'¥',  label:'Japanese Yen'      },
-  { code:'SGD', symbol:'S$', label:'Singapore Dollar'  },
-  { code:'AUD', symbol:'A$', label:'Australian Dollar' },
-  { code:'CAD', symbol:'C$', label:'Canadian Dollar'   },
-  { code:'KRW', symbol:'₩',  label:'Korean Won'        },
-  { code:'CNY', symbol:'¥',  label:'Chinese Yuan'      },
+  { code: 'USD', symbol: '$',  label: 'US Dollar'        },
+  { code: 'PHP', symbol: '₱',  label: 'Philippine Peso'  },
+  { code: 'EUR', symbol: '€',  label: 'Euro'             },
+  { code: 'GBP', symbol: '£',  label: 'British Pound'    },
+  { code: 'JPY', symbol: '¥',  label: 'Japanese Yen'     },
+  { code: 'SGD', symbol: 'S$', label: 'Singapore Dollar' },
+  { code: 'AUD', symbol: 'A$', label: 'Australian Dollar'},
+  { code: 'CAD', symbol: 'C$', label: 'Canadian Dollar'  },
+  { code: 'KRW', symbol: '₩',  label: 'Korean Won'       },
+  { code: 'CNY', symbol: '¥',  label: 'Chinese Yuan'     },
 ]
 
 // ── Icon map ───────────────────────────────────────────────
 export const CATEGORY_ICONS: Record<string, any> = {
-  Food:Utensils, Groceries:ShoppingBag, Transport:Car,
-  Utilities:Zap, Shopping:ShoppingCart, Leisure:Gamepad2,
-  Income:Banknote, Other:MoreHorizontal,
+  Food: Utensils, Groceries: ShoppingBag, Transport: Car,
+  Utilities: Zap, Shopping: ShoppingCart, Leisure: Gamepad2,
+  Income: Banknote, Other: MoreHorizontal,
 }
 function iconForCategory(cat: string, amount: number) {
   if (amount > 0) return Banknote
@@ -111,7 +115,7 @@ export interface Tx {
   accountId: number | null
   date:      string
   isoDate:   string
-  creditTx?: boolean   // true = expense paid via credit card; excluded from totalBalance
+  creditTx?: boolean
 }
 
 function formatDate(iso: string): string {
@@ -119,7 +123,7 @@ function formatDate(iso: string): string {
   const diff = Math.floor((now.getTime() - d.getTime()) / 86400000)
   if (diff === 0) return 'Today'
   if (diff === 1) return 'Yesterday'
-  return d.toLocaleDateString('en-PH', { month:'short', day:'numeric' })
+  return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })
 }
 
 function loadTxns(): Tx[] {
@@ -130,7 +134,6 @@ function saveTxns(list: Tx[]) {
   try { localStorage.setItem(TXNS_KEY, JSON.stringify(list)) } catch {}
 }
 
-// Helper — get account type from localStorage
 function getAccountType(accountId: number | null): string | null {
   if (accountId == null) return null
   try {
@@ -157,11 +160,7 @@ export function addTx(tx: {
   isoDate?:  string
 }) {
   const iso = tx.isoDate ?? new Date().toISOString()
-
-  // If the account is a credit card, mark the tx so it's excluded from
-  // totalBalance (credit card spending is tracked via outstanding, not the
-  // main balance which represents real cash/asset flow).
-  const accType  = getAccountType(tx.accountId ?? null)
+  const accType = getAccountType(tx.accountId ?? null)
   const isCreditTx = accType === 'credit'
 
   const entry: Tx = {
@@ -186,7 +185,6 @@ export function updateCardDisplayBalance(cardId: number, amount: number) {
     const card = cards.find((c: any) => c.id === cardId)
     if (!card) return
     if (card.type === 'credit') {
-      // Expenses (negative amount) increase outstanding; income/payments decrease it
       card.outstanding = Math.max(0, (card.outstanding ?? 0) - amount)
     } else {
       card.balance = Math.max(0, (card.balance ?? 0) + amount)
@@ -197,9 +195,7 @@ export function updateCardDisplayBalance(cardId: number, amount: number) {
   } catch (e: any) { orbLog(`Card update failed: ${e?.message}`, 'error') }
 }
 
-// ── Totals — exclude credit-card transactions ──────────────
-// Credit card expenses are tracked via card.outstanding (liability),
-// not via the main balance. Including them would double-count.
+// ── Totals ─────────────────────────────────────────────────
 export const totalIncome = computed(() =>
   transactions.value
     .filter(t => t.amount > 0 && !t.creditTx)
@@ -216,7 +212,7 @@ export const totalBalance = computed(() =>
     .reduce((s, t) => s + t.amount, 0)
 )
 
-// ── Spending by category (real expenses only, no credit-card double-count) ─
+// ── Spending by category ───────────────────────────────────
 export interface SpendCat { category: string; total: number }
 
 export const spendingByCategory = computed((): SpendCat[] => {
@@ -243,7 +239,6 @@ export const spendingByAccount = computed((): SpendAcct[] => {
       const prev = map.get(t.accountId) ?? 0
       map.set(t.accountId, prev + Math.abs(t.amount))
     })
-  // resolve account names
   let cards: any[] = []
   try { const r = localStorage.getItem(CARDS_KEY); if (r) cards = JSON.parse(r) } catch {}
   return Array.from(map.entries())
@@ -254,6 +249,8 @@ export const spendingByAccount = computed((): SpendAcct[] => {
     })
     .sort((a, b) => b.total - a.total)
 })
+
+// ── Bills ──────────────────────────────────────────────────
 export interface Bill {
   id:        number
   name:      string
@@ -270,16 +267,12 @@ const ICON_KEY_MAP: Record<string, any> = {
 }
 export function billIcon(key: string) { return ICON_KEY_MAP[key] ?? MoreHorizontal }
 
-function dueDateStatus(dueDay: number): 'pending'|'overdue' {
-  const today = new Date().getDate()
-  return today > dueDay ? 'overdue' : 'pending'
+function dueDateStatus(dueDay: number): 'pending' | 'overdue' {
+  return new Date().getDate() > dueDay ? 'overdue' : 'pending'
 }
 
 function loadBills(): Bill[] {
-  try {
-    const r = localStorage.getItem(BILLS_KEY)
-    if (r) return JSON.parse(r)
-  } catch {}
+  try { const r = localStorage.getItem(BILLS_KEY); if (r) return JSON.parse(r) } catch {}
   return []
 }
 function saveBillsRaw(list: Bill[]) {
@@ -293,23 +286,18 @@ export function saveBills() {
   orbLog(`Bills saved (${bills.value.length} items)`)
 }
 
-export function addBill(bill: Omit<Bill, 'id'|'status'>): void {
-  const entry: Bill = { ...bill, id: Date.now(), status: dueDateStatus(bill.dueDay) }
-  bills.value.push(entry)
+export function addBill(bill: Omit<Bill, 'id' | 'status'>): void {
+  bills.value.push({ ...bill, id: Date.now(), status: dueDateStatus(bill.dueDay) })
   saveBills()
-  orbLog(`Bill added: ${bill.name}${bill.recurring ? ' (recurring)' : ''}`)
+  orbLog(`Bill added: ${bill.name}`)
 }
 
 export function markBillPaid(id: number): void {
   const b = bills.value.find(b => b.id === id)
   if (!b) return
   b.status = 'paid'
-  if (b.recurring) {
-    orbLog(`Bill paid (recurring — resets next month): ${b.name}`)
-  } else {
-    orbLog(`Bill paid: ${b.name}`)
-  }
   saveBills()
+  orbLog(`Bill paid: ${b.name}`)
 }
 
 export function deleteBill(id: number): void {
@@ -336,10 +324,10 @@ export const overdueBillsCount = computed(() =>
 
 // ── Goals ──────────────────────────────────────────────────
 export const goals = ref([
-  { icon:Plane,     label:'Japan',     pct:68, saved:34000, target:50000  },
-  { icon:Shield,    label:'Emergency', pct:45, saved:45000, target:100000 },
-  { icon:Laptop,    label:'Laptop',    pct:82, saved:41000, target:50000  },
-  { icon:BarChart2, label:'Invest',    pct:30, saved:15000, target:50000  },
+  { icon: Plane,     label: 'Japan',     pct: 68, saved: 34000, target: 50000  },
+  { icon: Shield,    label: 'Emergency', pct: 45, saved: 45000, target: 100000 },
+  { icon: Laptop,    label: 'Laptop',    pct: 82, saved: 41000, target: 50000  },
+  { icon: BarChart2, label: 'Invest',    pct: 30, saved: 15000, target: 50000  },
 ])
 
 // ── Grocery ────────────────────────────────────────────────
@@ -364,18 +352,15 @@ export interface GroceryList {
 }
 
 function loadGroceryLists(): GroceryList[] {
-  try {
-    const r = localStorage.getItem(GROCERY_KEY)
-    if (r) return JSON.parse(r)
-  } catch {}
+  try { const r = localStorage.getItem(GROCERY_KEY); if (r) return JSON.parse(r) } catch {}
   return []
 }
 function saveGroceryListsRaw(lists: GroceryList[]) {
   try { localStorage.setItem(GROCERY_KEY, JSON.stringify(lists)) } catch {}
 }
 
-export const groceryLists   = ref<GroceryList[]>(loadGroceryLists())
-export const activeListId   = ref<number | null>(groceryLists.value[0]?.id ?? null)
+export const groceryLists  = ref<GroceryList[]>(loadGroceryLists())
+export const activeListId  = ref<number | null>(groceryLists.value[0]?.id ?? null)
 
 export const activeGroceryList = computed(() =>
   groceryLists.value.find(l => l.id === activeListId.value) ?? null
@@ -407,9 +392,7 @@ export function addGroceryList(name: string, budget = 0): GroceryList {
 export function deleteGroceryList(id: number) {
   const name = groceryLists.value.find(l => l.id === id)?.name
   groceryLists.value = groceryLists.value.filter(l => l.id !== id)
-  if (activeListId.value === id) {
-    activeListId.value = groceryLists.value[0]?.id ?? null
-  }
+  if (activeListId.value === id) activeListId.value = groceryLists.value[0]?.id ?? null
   saveGroceryLists()
   orbLog(`Grocery list deleted: ${name}`)
 }
@@ -429,7 +412,7 @@ export function setListBudget(id: number, budget: number) {
   orbLog(`Grocery budget set: ${budget} for ${list.name}`)
 }
 
-export function addGroceryItem(listId: number, item: Omit<GroceryItem, 'id'|'checked'>) {
+export function addGroceryItem(listId: number, item: Omit<GroceryItem, 'id' | 'checked'>) {
   const list = groceryLists.value.find(l => l.id === listId)
   if (!list) return
   list.items.push({ ...item, id: Date.now(), checked: false })
@@ -451,7 +434,7 @@ export function deleteGroceryItem(listId: number, itemId: number) {
   if (!list) return
   list.items = list.items.filter(i => i.id !== itemId)
   saveGroceryLists()
-  orbLog(`Grocery item deleted`)
+  orbLog('Grocery item deleted')
 }
 
 export function clearCheckedItems(listId: number) {

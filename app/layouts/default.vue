@@ -1,8 +1,6 @@
 <template>
-  <div
-    class="devkit-layout flex flex-col w-full max-w-[430px] mx-auto"
-    style="height:100dvh;overflow:hidden;padding-top:env(safe-area-inset-top);"
-  >
+  <div class="devkit-layout flex flex-col w-full max-w-[430px] mx-auto"
+    style="height:100dvh;overflow:hidden;padding-top:env(safe-area-inset-top);">
     <div class="relative flex-1" style="overflow:hidden;min-height:0;">
       <Transition :name="transitionName">
         <div :key="activePage" class="page-wrap">
@@ -12,19 +10,16 @@
     </div>
 
     <!-- Tab bar -->
-    <nav v-if="isTabPage"
-      class="flex-shrink-0 flex items-center z-50"
+    <nav v-if="isTabPage" class="flex-shrink-0 flex items-center z-50"
       style="background:rgba(6,8,16,0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,0.06);padding-bottom:calc(8px + env(safe-area-inset-bottom));">
 
       <button v-for="tab in leftTabs" :key="tab.id"
         class="flex-1 flex flex-col items-center gap-1 pt-2.5 pb-1 active:scale-90 transition-transform"
         @click="navigate(tab.id)">
-        <div :class="['w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200']"
-          :style="activePage === tab.id
-            ? { background: accent + '1E', border: `1px solid ${accent}44`, boxShadow: `0 0 14px ${accent}33` }
-            : { background: 'transparent', border: '1px solid transparent' }">
-          <component :is="tab.icon" :size="17"
-            :style="activePage === tab.id ? { color: accent } : { color: '#3f3f46' }"
+        <div :class="['w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200']" :style="activePage === tab.id
+          ? { background: accent + '1E', border: `1px solid ${accent}44`, boxShadow: `0 0 14px ${accent}33` }
+          : { background: 'transparent', border: '1px solid transparent' }">
+          <component :is="tab.icon" :size="17" :style="activePage === tab.id ? { color: accent } : { color: '#3f3f46' }"
             :stroke-width="activePage === tab.id ? 2.2 : 1.8" />
         </div>
         <span class="text-[9px] font-mono font-bold"
@@ -40,8 +35,7 @@
           style="width:52px;height:52px;border-radius:50%;">
 
           <!-- Outer pulse ring when connected -->
-          <div v-if="tcpConnected"
-            class="absolute inset-0 rounded-full tcp-pulse-ring"
+          <div v-if="tcpConnected" class="absolute inset-0 rounded-full tcp-pulse-ring"
             :style="{ border: `1px solid ${accent}66` }"></div>
 
           <!-- Button face -->
@@ -54,8 +48,9 @@
             <div v-if="tcpConnected" class="absolute inset-0 rounded-full"
               :style="{ background: `radial-gradient(circle at 28% 26%, ${accent}2E 0%, transparent 55%)` }"></div>
 
-            <Zap v-if="tcpConnected" :size="20" :style="{ color: accent, position:'relative', zIndex:1 }" :stroke-width="2.5" />
-            <Zap v-else              :size="20" style="color:#3f3f46;position:relative;z-index:1" :stroke-width="1.8" />
+            <Zap v-if="tcpConnected" :size="20" :style="{ color: accent, position: 'relative', zIndex: 1 }"
+              :stroke-width="2.5" />
+            <Zap v-else :size="20" style="color:#3f3f46;position:relative;z-index:1" :stroke-width="1.8" />
           </div>
         </button>
         <span class="text-[9px] font-mono font-bold mt-1"
@@ -68,10 +63,9 @@
         class="flex-1 flex flex-col items-center gap-1 pt-2.5 pb-1 active:scale-90 transition-transform"
         @click="navigate(tab.id)">
         <div class="relative">
-          <div :class="['w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200']"
-            :style="activePage === tab.id
-              ? { background: accent + '1E', border: `1px solid ${accent}44`, boxShadow: `0 0 14px ${accent}33` }
-              : { background: 'transparent', border: '1px solid transparent' }">
+          <div :class="['w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200']" :style="activePage === tab.id
+            ? { background: accent + '1E', border: `1px solid ${accent}44`, boxShadow: `0 0 14px ${accent}33` }
+            : { background: 'transparent', border: '1px solid transparent' }">
             <component :is="tab.icon" :size="17"
               :style="activePage === tab.id ? { color: accent } : { color: '#3f3f46' }"
               :stroke-width="activePage === tab.id ? 2.2 : 1.8" />
@@ -94,22 +88,22 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Home, FileCode2, FlaskConical, MoreHorizontal, Zap } from 'lucide-vue-next'
-import { useNav }          from '../composables/useNav'
+import { useNav } from '../composables/useNav'
 import { settings, orbLog } from '../composables/useStore'
 
 // Page imports
-import Index        from '../pages/index.vue'
-import Env          from '../pages/env.vue'  
-import More         from '../pages/more.vue'
-import Settings     from '../pages/settings.vue'
-import Developer    from '../pages/developer.vue'
+import Index from '../pages/index.vue'
+import Env from '../pages/env.vue'
+import More from '../pages/more.vue'
+import Settings from '../pages/settings.vue'
+import Developer from '../pages/developer.vue'
 
 const { activePage, transitionName, navigate, TAB_ORDER } = useNav()
 const accent = computed(() => settings.value.accentColor)
 
 // ── TCP state ──────────────────────────────────────────────
 const tcpConnected = ref(false)
-const tcpPort      = ref(3131)
+const tcpPort = ref(3131)
 
 function toggleTcp() {
   tcpConnected.value = !tcpConnected.value
@@ -118,25 +112,24 @@ function toggleTcp() {
 
 // ── Pages ─────────────────────────────────────────────────
 const TAB_PAGES = new Set(['home', 'env', 'grocery', 'bills', 'more'])
-const isTabPage  = computed(() => TAB_PAGES.has(activePage.value))
+const isTabPage = computed(() => TAB_PAGES.has(activePage.value))
 
 const PAGE_MAP: Record<string, any> = {
-  home: Index, env: Env, grocery: Grocery,
-  bills: Bills, more: More,
-  settings: Settings, developer: Developer,
-  transactions: Transactions, orb: OrbChat,
-  profile: Profile, randomizer: Randomizer,
-  about: About,
+  home: Index, 
+  env: Env,
+  more: More,
+  settings: Settings, 
+  developer: Developer
 }
 const currentPage = computed(() => PAGE_MAP[activePage.value])
 
-const leftTabs  = [
-  { id: 'home', icon: Home,      label: 'home' },
-  { id: 'env',  icon: FileCode2, label: 'env'  },
+const leftTabs = [
+  { id: 'home', icon: Home, label: 'home' },
+  { id: 'env', icon: FileCode2, label: 'env' },
 ]
 const rightTabs = [
-  { id: 'more',      icon: MoreHorizontal, label: 'tools' },
-  { id: 'developer', icon: FlaskConical,   label: 'dev'   },
+  { id: 'more', icon: MoreHorizontal, label: 'tools' },
+  { id: 'developer', icon: FlaskConical, label: 'dev' },
 ]
 
 function handlePop() {
@@ -156,35 +149,91 @@ onUnmounted(() => window.removeEventListener('popstate', handlePop))
   background: #060810;
 }
 
-.font-mono { font-family: 'JetBrains Mono', 'Courier New', monospace !important; }
+.font-mono {
+  font-family: 'JetBrains Mono', 'Courier New', monospace !important;
+}
 
-* { -webkit-user-select:none!important; user-select:none!important; -webkit-touch-callout:none!important; }
-input, textarea { -webkit-user-select:text!important; user-select:text!important; }
-.scrollbar-hide::-webkit-scrollbar { display:none; }
-.scrollbar-hide { -ms-overflow-style:none; scrollbar-width:none; }
+* {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+input,
+textarea {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 .page-wrap {
-  position:absolute; top:0; left:0; right:0; bottom:0;
-  overflow-y:scroll; overflow-x:hidden;
-  -webkit-overflow-scrolling:touch;
-  touch-action:pan-y;
-  overscroll-behavior-y:contain;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
 }
-.page-wrap::-webkit-scrollbar { display:none; }
 
-.slide-left-enter-active, .slide-left-leave-active,
-.slide-right-enter-active, .slide-right-leave-active {
-  transition: transform .28s cubic-bezier(.35,0,.15,1), opacity .28s ease;
+.page-wrap::-webkit-scrollbar {
+  display: none;
 }
-.slide-left-enter-from  { transform:translateX(100%);  opacity:0; }
-.slide-left-leave-to    { transform:translateX(-20%);  opacity:0; }
-.slide-right-enter-from { transform:translateX(-100%); opacity:0; }
-.slide-right-leave-to   { transform:translateX(20%);   opacity:0; }
+
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform .28s cubic-bezier(.35, 0, .15, 1), opacity .28s ease;
+}
+
+.slide-left-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.slide-left-leave-to {
+  transform: translateX(-20%);
+  opacity: 0;
+}
+
+.slide-right-enter-from {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.slide-right-leave-to {
+  transform: translateX(20%);
+  opacity: 0;
+}
 
 /* TCP pulse ring */
 @keyframes tcp-pulse {
-  0%, 100% { opacity:0.5; transform:scale(1);    }
-  50%       { opacity:0;   transform:scale(1.22); }
+
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0;
+    transform: scale(1.22);
+  }
 }
-.tcp-pulse-ring { animation: tcp-pulse 1.6s ease-in-out infinite; }
+
+.tcp-pulse-ring {
+  animation: tcp-pulse 1.6s ease-in-out infinite;
+}
 </style>

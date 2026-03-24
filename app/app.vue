@@ -1,8 +1,6 @@
 <template>
   <div>
-    <SplashScreen     v-if="phase === 'splash'"    @done="onSplashDone" />
-    <OnboardingScreen v-else-if="phase === 'onboarding'" @done="onOnboardingDone" />
-    <AiSetupScreen    v-else-if="phase === 'ai-setup'"   @done="onAiSetupDone" />
+    <SplashScreen v-if="phase === 'splash'" @done="onSplashDone" />
     <template v-else>
       <Transition name="app-fade">
         <div v-if="appVisible" class="contents">
@@ -17,31 +15,29 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted, nextTick } from 'vue'
-import SplashScreen     from '~/components/SplashScreen.vue'
-import IdleLockScreen   from '~/components/IdleLockScreen.vue'
-import PinLockScreen    from '~/components/PinLockScreen.vue'
-import { useDark }      from '~/composables/useDark'
+import SplashScreen   from '~/components/SplashScreen.vue'
+import IdleLockScreen from '~/components/IdleLockScreen.vue'
+import PinLockScreen  from '~/components/PinLockScreen.vue'
+import { useDark }    from '~/composables/useDark'
 import { initIdleLock } from '~/composables/useIdleLock'
-import { settings }     from '~/composables/useStore'
+import { settings }   from '~/composables/useStore'
 import { pinEnabled, lockWithPin } from '~/composables/usePin'
+import { initDatabase } from '~/utils/initDatabase'
 
-type Phase = 'splash' | 'onboarding' | 'ai-setup' | 'app'
+type Phase = 'splash' | 'app'
 const phase      = ref<Phase>('splash')
 const appVisible = ref(false)
-
-const ONBOARDING_KEY = 'orb_onboarding_done'
-const AI_SETUP_KEY   = 'orb_ai_setup_done_v1'
 
 const { initDark } = useDark()
 initDark()
 
-// ── Accent color injection ──────────────────────────────────
+// ── Accent color injection ─────────────────────────────────
 let accentStyleEl: HTMLStyleElement | null = null
 
 function buildAccentCSS(hex: string): string {
-  const r = parseInt(hex.slice(1,3),16)
-  const g = parseInt(hex.slice(3,5),16)
-  const b = parseInt(hex.slice(5,7),16)
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
   return `
 :root { --accent: ${hex}; --accent-r: ${r}; --accent-g: ${g}; --accent-b: ${b}; }
 .bg-violet-50, .dark\\:bg-violet-950\\/40 { background-color: rgba(${r},${g},${b},0.08) !important; }
@@ -82,7 +78,7 @@ function injectAccent(hex: string) {
 }
 
 injectAccent(settings.value.accentColor)
-watch(() => settings.value.accentColor, hex => injectAccent(hex), { immediate: false })
+watch(() => settings.value.accentColor, hex => injectAccent(hex))
 
 onMounted(async () => {
   try {
@@ -92,46 +88,7 @@ onMounted(async () => {
   initDatabase().catch(e => console.warn('[Orb] DB init:', e))
 })
 
-// ── After splash: check onboarding → ai-setup → app ─────────
 async function onSplashDone() {
-  let onboardingDone = false
-  try { onboardingDone = localStorage.getItem(ONBOARDING_KEY) === 'true' } catch {}
-
-  if (!onboardingDone) {
-    phase.value = 'onboarding'
-    return
-  }
-
-  // Check if AI setup has been shown before
-  let aiSetupDone = false
-  try { aiSetupDone = localStorage.getItem(AI_SETUP_KEY) === 'true' } catch {}
-
-  if (!aiSetupDone) {
-    phase.value = 'ai-setup'
-    return
-  }
-
-  // If AI was enabled and model is downloaded, warm it up silently in background
-  try {
-    const aiOn = localStorage.getItem(AI_ENABLED_KEY) === 'true'
-    if (aiOn) {
-      checkModelDownloaded().then(({ downloaded }) => {
-        if (downloaded) initNativeModel().catch(() => {})
-      }).catch(() => {})
-    }
-  } catch {}
-
-  await enterApp()
-}
-
-async function onOnboardingDone() {
-  try { localStorage.setItem(ONBOARDING_KEY, 'true') } catch {}
-  // Show AI setup for new users
-  phase.value = 'ai-setup'
-}
-
-async function onAiSetupDone() {
-  try { localStorage.setItem(AI_SETUP_KEY, 'true') } catch {}
   await enterApp()
 }
 
