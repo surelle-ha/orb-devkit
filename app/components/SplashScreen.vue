@@ -65,7 +65,7 @@
       <div class="absolute bottom-20 flex flex-col items-center gap-1 tagline-wrap"
         :class="[textVisible && !morphing ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3']">
         <p class="text-[11px] font-bold text-zinc-600 tracking-[0.3em] uppercase">Orb DevKit</p>
-        <p class="text-[10px] text-zinc-500">Developer Environment</p>
+        <p class="text-[10px] text-zinc-500">Developer Toolkit · v1.0</p>
       </div>
     </div>
   </Transition>

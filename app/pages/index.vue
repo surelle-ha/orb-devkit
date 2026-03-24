@@ -535,6 +535,8 @@ import { useNav } from '../composables/useNav'
 import { settings, orbLog } from '../composables/useStore'
 import { tcpConnected, tcpPort, toggleTcp } from '../composables/useTcp'
 import { devices as connectedDevices } from '../composables/useDevices'
+// ── Use the shared devMode composable so it stays in sync with the layout ──
+import { devMode, devSessionTime, toggleDevMode } from '../composables/useDevMode'
 
 const { navigate } = useNav()
 const accent = computed(() => settings.value.accentColor)
@@ -545,15 +547,8 @@ const accentRgb = computed(() => {
   return `${parseInt(h.slice(0, 2), 16)},${parseInt(h.slice(2, 4), 16)},${parseInt(h.slice(4, 6), 16)}`
 })
 
-// ── Dev Mode with confirmation ────────────────────────────
-const DEV_MODE_KEY = 'orb_dev_mode_v1'
+// ── Dev Mode confirm — delegates to shared composable ──────
 const showDevConfirm = ref(false)
-const devMode = ref((() => {
-  try { return localStorage.getItem(DEV_MODE_KEY) === 'true' } catch { return false }
-})())
-const devSessionStart = ref(Date.now())
-const devSessionTime = ref('00:00')
-let devTimer: ReturnType<typeof setInterval> | null = null
 
 function goToDevice() {
   const first = connectedDevices.value.find(d => d.online)
@@ -570,34 +565,8 @@ function confirmDevMode() {
 
 function executeDevToggle() {
   showDevConfirm.value = false
-  devMode.value = !devMode.value
-  try { localStorage.setItem(DEV_MODE_KEY, devMode.value ? 'true' : 'false') } catch { }
-
-  if (devMode.value) {
-    if (!tcpConnected.value) toggleTcp()
-    devSessionStart.value = Date.now()
-    startDevTimer()
-    orbLog('Dev mode enabled')
-  } else {
-    if (tcpConnected.value) toggleTcp()
-    stopDevTimer()
-    orbLog('Dev mode disabled')
-  }
-}
-
-function startDevTimer() {
-  if (devTimer) clearInterval(devTimer)
-  devTimer = setInterval(() => {
-    const elapsed = Math.floor((Date.now() - devSessionStart.value) / 1000)
-    const m = Math.floor(elapsed / 60).toString().padStart(2, '0')
-    const s = (elapsed % 60).toString().padStart(2, '0')
-    devSessionTime.value = `${m}:${s}`
-  }, 1000)
-}
-
-function stopDevTimer() {
-  if (devTimer) { clearInterval(devTimer); devTimer = null }
-  devSessionTime.value = '00:00'
+  // toggleDevMode() handles TCP, timer, and persistence — same as layout button
+  toggleDevMode()
 }
 
 // ── Twin TCP orb (supreme only) ────────────────────────────
@@ -647,11 +616,18 @@ const focusStreak = computed(() => {
   } catch { return 0 }
 })
 
-// ── Device connected count ─────────────────────────────────
-const deviceCount = computed(() => tcpConnected.value ? 1 : 0)
+// ── ENV var count — reads actual projects from localStorage ─
+const envVarCount = computed(() => {
+  try {
+    const r = localStorage.getItem('orb_env_projects_v2')
+    if (!r) return 0
+    const projects = JSON.parse(r) as Array<{ instances: Array<{ vars: unknown[] }> }>
+    return projects.reduce((total, proj) =>
+      total + proj.instances.reduce((sum, inst) => sum + inst.vars.length, 0), 0)
+  } catch { return 0 }
+})
 
 // ── Orb data ──────────────────────────────────────────────
-const envVarCount = ref(12)
 const lastSpeed = ref('—')
 const orbExpanding = ref(false)
 
@@ -718,10 +694,9 @@ function initStarfield(canvas: HTMLCanvasElement) {
 
 onMounted(() => {
   orbLog('DevKit dashboard loaded')
-  if (devMode.value) startDevTimer()
   nextTick(() => { requestAnimationFrame(() => { const c = starsCanvas.value; if (c && c.clientWidth > 0) initStarfield(c) }) })
 })
-onUnmounted(() => { cancelAnimationFrame(animFrame); stopDevTimer(); if (twinOrbTimer) clearTimeout(twinOrbTimer) })
+onUnmounted(() => { cancelAnimationFrame(animFrame); if (twinOrbTimer) clearTimeout(twinOrbTimer) })
 </script>
 
 <style scoped>
@@ -744,236 +719,74 @@ onUnmounted(() => { cancelAnimationFrame(animFrame); stopDevTimer(); if (twinOrb
 }
 
 @keyframes orb-h-spin-cw {
-  from {
-    transform: rotate(0deg)
-  }
-
-  to {
-    transform: rotate(360deg)
-  }
+  from { transform: rotate(0deg) }
+  to { transform: rotate(360deg) }
 }
 
 @keyframes orb-h-spin-ccw {
-  from {
-    transform: rotate(0deg)
-  }
-
-  to {
-    transform: rotate(-360deg)
-  }
+  from { transform: rotate(0deg) }
+  to { transform: rotate(-360deg) }
 }
 
 @keyframes orb-h-orbit-1 {
-  0% {
-    transform: rotate(0deg) translate(72px, 0) rotate(0deg);
-    opacity: .95
-  }
-
-  25% {
-    transform: rotate(90deg) translate(72px, 0) rotate(-90deg);
-    opacity: .3
-  }
-
-  50% {
-    transform: rotate(180deg) translate(72px, 0) rotate(-180deg);
-    opacity: .2
-  }
-
-  75% {
-    transform: rotate(270deg) translate(72px, 0) rotate(-270deg);
-    opacity: .3
-  }
-
-  100% {
-    transform: rotate(360deg) translate(72px, 0) rotate(-360deg);
-    opacity: .95
-  }
+  0%   { transform: rotate(0deg)   translate(72px, 0) rotate(0deg);    opacity: .95 }
+  25%  { transform: rotate(90deg)  translate(72px, 0) rotate(-90deg);  opacity: .3  }
+  50%  { transform: rotate(180deg) translate(72px, 0) rotate(-180deg); opacity: .2  }
+  75%  { transform: rotate(270deg) translate(72px, 0) rotate(-270deg); opacity: .3  }
+  100% { transform: rotate(360deg) translate(72px, 0) rotate(-360deg); opacity: .95 }
 }
 
 @keyframes orb-h-orbit-2 {
-  0% {
-    transform: rotate(180deg) translate(90px, 0) rotate(-180deg);
-    opacity: .7
-  }
-
-  50% {
-    transform: rotate(360deg) translate(90px, 0) rotate(-360deg);
-    opacity: .7
-  }
-
-  75% {
-    transform: rotate(450deg) translate(90px, 0) rotate(-450deg);
-    opacity: .25
-  }
-
-  100% {
-    transform: rotate(540deg) translate(90px, 0) rotate(-540deg);
-    opacity: .7
-  }
+  0%   { transform: rotate(180deg) translate(90px, 0) rotate(-180deg); opacity: .7  }
+  50%  { transform: rotate(360deg) translate(90px, 0) rotate(-360deg); opacity: .7  }
+  75%  { transform: rotate(450deg) translate(90px, 0) rotate(-450deg); opacity: .25 }
+  100% { transform: rotate(540deg) translate(90px, 0) rotate(-540deg); opacity: .7  }
 }
 
-.orb-h-ring-1 {
-  animation: orb-h-spin-cw 14s linear infinite;
-  transform-origin: 72px 12px
-}
-
-.orb-h-ring-2 {
-  animation: orb-h-spin-ccw 22s linear infinite;
-  transform-origin: 100px 18px
-}
-
-.orb-h-ring-3 {
-  animation: orb-h-spin-cw 35s linear infinite;
-  transform-origin: 127px 26px
-}
-
-.orb-h-ring-4 {
-  animation: orb-h-spin-ccw 50s linear infinite;
-  transform-origin: 155px 34px
-}
-
-.orb-h-p1 {
-  animation: orb-h-orbit-1 4s linear infinite
-}
-
-.orb-h-p2 {
-  animation: orb-h-orbit-2 7s linear infinite
-}
+.orb-h-ring-1 { animation: orb-h-spin-cw  14s linear infinite; transform-origin: 72px  12px }
+.orb-h-ring-2 { animation: orb-h-spin-ccw 22s linear infinite; transform-origin: 100px 18px }
+.orb-h-ring-3 { animation: orb-h-spin-cw  35s linear infinite; transform-origin: 127px 26px }
+.orb-h-ring-4 { animation: orb-h-spin-ccw 50s linear infinite; transform-origin: 155px 34px }
+.orb-h-p1 { animation: orb-h-orbit-1 4s linear infinite }
+.orb-h-p2 { animation: orb-h-orbit-2 7s linear infinite }
 
 /* Twin TCP orb */
-.twin-orb-container {
-  position: absolute;
-}
+.twin-orb-container { position: absolute; }
 
-@keyframes tcp-orb-cw {
-  from {
-    transform: rotate(0deg)
-  }
-
-  to {
-    transform: rotate(360deg)
-  }
-}
-
-@keyframes tcp-orb-ccw {
-  from {
-    transform: rotate(360deg)
-  }
-
-  to {
-    transform: rotate(0deg)
-  }
-}
+@keyframes tcp-orb-cw  { from { transform: rotate(0deg)   } to { transform: rotate(360deg)  } }
+@keyframes tcp-orb-ccw { from { transform: rotate(360deg) } to { transform: rotate(0deg)    } }
 
 @keyframes tcp-particle-move {
-  0% {
-    transform: translateX(0) translateY(0);
-    opacity: 0.8;
-  }
-
-  50% {
-    transform: translateX(-30px) translateY(-20px);
-    opacity: 0.3;
-  }
-
-  100% {
-    transform: translateX(-60px) translateY(-10px);
-    opacity: 0;
-  }
+  0%   { transform: translateX(0) translateY(0);       opacity: 0.8; }
+  50%  { transform: translateX(-30px) translateY(-20px); opacity: 0.3; }
+  100% { transform: translateX(-60px) translateY(-10px); opacity: 0;   }
 }
 
-@keyframes tcp-dash {
-  to {
-    stroke-dashoffset: -14;
-  }
-}
+@keyframes tcp-dash { to { stroke-dashoffset: -14; } }
 
-.tcp-orb-ring {
-  animation: tcp-orb-cw 6s linear infinite;
-}
+.tcp-orb-ring       { animation: tcp-orb-cw  6s linear infinite; }
+.tcp-orb-ring-inner { animation: tcp-orb-ccw 9s linear infinite; }
+.tcp-particle       { animation: tcp-particle-move linear infinite; position: absolute; }
 
-.tcp-orb-ring-inner {
-  animation: tcp-orb-ccw 9s linear infinite;
-}
+.twin-orb-enter-active { transition: all 0.6s cubic-bezier(0.34, 1.1, 0.64, 1); }
+.twin-orb-leave-active { transition: all 0.3s ease; }
+.twin-orb-enter-from   { opacity: 0; transform: scale(0.3) translateY(20px); }
+.twin-orb-leave-to     { opacity: 0; transform: scale(0.3); }
 
-.tcp-particle {
-  animation: tcp-particle-move linear infinite;
-  position: absolute;
-}
+.fade-enter-active, .fade-leave-active { transition: opacity .25s ease; }
+.fade-enter-from, .fade-leave-to       { opacity: 0; }
 
-.twin-orb-enter-active {
-  transition: all 0.6s cubic-bezier(0.34, 1.1, 0.64, 1);
-}
-
-.twin-orb-leave-active {
-  transition: all 0.3s ease;
-}
-
-.twin-orb-enter-from {
-  opacity: 0;
-  transform: scale(0.3) translateY(20px);
-}
-
-.twin-orb-leave-to {
-  opacity: 0;
-  transform: scale(0.3);
-}
-
-/* Dev mode confirm */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity .25s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.orb-expand-enter-active {
-  animation: orb-burst .65s cubic-bezier(.22, 1, .36, 1) forwards
-}
-
-.orb-expand-leave-active {
-  transition: opacity .2s ease
-}
-
-.orb-expand-leave-to {
-  opacity: 0
-}
+.orb-expand-enter-active { animation: orb-burst .65s cubic-bezier(.22, 1, .36, 1) forwards }
+.orb-expand-leave-active { transition: opacity .2s ease }
+.orb-expand-leave-to     { opacity: 0 }
 
 @keyframes orb-burst {
-  0% {
-    transform: scale(.05);
-    opacity: .8
-  }
-
-  60% {
-    transform: scale(1.4);
-    opacity: 1
-  }
-
-  100% {
-    transform: scale(3);
-    opacity: 1
-  }
+  0%   { transform: scale(.05); opacity: .8 }
+  60%  { transform: scale(1.4); opacity: 1  }
+  100% { transform: scale(3);   opacity: 1  }
 }
 
-.slide-down-enter-active,
-.slide-down-leave-active {
-  transition: all .28s ease;
-  overflow: hidden;
-}
-
-.slide-down-enter-from,
-.slide-down-leave-to {
-  max-height: 0;
-  opacity: 0;
-}
-
-.slide-down-enter-to,
-.slide-down-leave-from {
-  max-height: 120px;
-  opacity: 1;
-}
+.slide-down-enter-active, .slide-down-leave-active { transition: all .28s ease; overflow: hidden; }
+.slide-down-enter-from, .slide-down-leave-to       { max-height: 0; opacity: 0; }
+.slide-down-enter-to, .slide-down-leave-from       { max-height: 120px; opacity: 1; }
 </style>
