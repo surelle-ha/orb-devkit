@@ -72,19 +72,19 @@
         </button>
       </div>
 
-      <!-- Balance Card Style -->
+      <!-- Dashboard Card Style -->
       <div class="border-t border-slate-100 dark:border-zinc-800/60 px-4 py-3.5">
         <div class="flex items-center gap-3 mb-3">
           <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" :style="{ background: `${accent}18` }">
             <LayoutTemplate :size="17" :style="{ color: accent }" :stroke-width="1.8" />
           </div>
           <div>
-            <p class="text-[14px] font-bold text-slate-800 dark:text-zinc-100">Balance Card Style</p>
-            <p class="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">Choose your home screen balance look</p>
+            <p class="text-[14px] font-bold text-slate-800 dark:text-zinc-100">Dashboard Card Style</p>
+            <p class="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">Choose your home screen card look</p>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2.5">
-          <button v-for="style in balanceStyles" :key="style.value"
+          <button v-for="style in cardStyles" :key="style.value"
             @click="saveSettings({ balanceStyle: style.value })"
             :class="['relative overflow-hidden rounded-2xl border-2 transition-all active:scale-[0.97] p-3',
               settings.balanceStyle === style.value
@@ -102,37 +102,6 @@
           </button>
         </div>
       </div>
-    </div>
-
-    <!-- CURRENCY -->
-    <div class="px-5 pb-2"><h3 class="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Currency</h3></div>
-    <div class="mx-4 mb-4 rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur border border-slate-200/60 dark:border-zinc-800/60 shadow-sm">
-      <button @click="currencyOpen = !currencyOpen" class="w-full flex items-center gap-3 px-4 py-3.5 active:bg-slate-50 dark:active:bg-zinc-800 transition-colors rounded-2xl">
-        <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" :style="{ background: `${accent}18` }">
-          <span class="text-[18px] font-black" :style="{ color: accent }">{{ selectedCurrency.symbol }}</span>
-        </div>
-        <div class="flex-1 text-left">
-          <p class="text-[14px] font-bold text-slate-800 dark:text-zinc-100">{{ selectedCurrency.label }}</p>
-          <p class="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">{{ selectedCurrency.code }}</p>
-        </div>
-        <ChevronDown :size="17" :class="['text-slate-400 dark:text-zinc-500 transition-transform flex-shrink-0', currencyOpen ? 'rotate-180' : '']" :stroke-width="2" />
-      </button>
-      <Transition name="dropdown">
-        <div v-if="currencyOpen" class="border-t border-slate-100 dark:border-zinc-800/60">
-          <button v-for="(cur, i) in CURRENCIES" :key="cur.code" @click="setCurrency(cur)"
-            :class="['w-full flex items-center gap-3 px-4 py-3 transition-colors active:bg-slate-50 dark:active:bg-zinc-800',
-              i < CURRENCIES.length - 1 ? 'border-b border-slate-50 dark:border-zinc-800/40' : '']">
-            <span class="w-8 text-center text-[16px] font-black text-slate-500 dark:text-zinc-400 flex-shrink-0">{{ cur.symbol }}</span>
-            <div class="flex-1 text-left">
-              <p class="text-[13px] font-bold" :style="{ color: settings.currency === cur.code ? accent : '' }" :class="settings.currency !== cur.code ? 'text-slate-700 dark:text-zinc-200' : ''">{{ cur.label }}</p>
-              <p class="text-[10px] text-slate-400 dark:text-zinc-500">{{ cur.code }}</p>
-            </div>
-            <div v-if="settings.currency === cur.code" class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" :style="{ background: accent }">
-              <Check :size="11" color="white" :stroke-width="3" />
-            </div>
-          </button>
-        </div>
-      </Transition>
     </div>
 
     <!-- SECURITY -->
@@ -197,24 +166,6 @@
       </Transition>
     </div>
 
-    <!-- PREFERENCES -->
-    <div class="px-5 pb-2"><h3 class="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Preferences</h3></div>
-    <div class="mx-4 mb-4 rounded-2xl overflow-hidden bg-white/70 dark:bg-zinc-900/60 backdrop-blur border border-slate-200/60 dark:border-zinc-800/60 shadow-sm">
-      <div class="flex items-center gap-3 px-4 py-3.5">
-        <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" :style="{ background: `${accent}18` }">
-          <Smartphone :size="19" :style="{ color: accent }" :stroke-width="1.8" />
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-[14px] font-bold text-slate-800 dark:text-zinc-100">Shake to Add</p>
-          <p class="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">Shake phone to open transaction sheet</p>
-        </div>
-        <button @click="toggleShake" class="w-12 h-6 rounded-full transition-all relative flex-shrink-0"
-          :style="{ background: settings.shakeToAdd ? accent : '' }" :class="!settings.shakeToAdd ? 'bg-slate-200 dark:bg-zinc-700' : ''">
-          <div :class="['absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all', settings.shakeToAdd ? 'left-6' : 'left-0.5']"></div>
-        </button>
-      </div>
-    </div>
-
     <!-- DATA -->
     <div class="px-5 pb-2"><h3 class="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Data</h3></div>
     <div class="mx-4 mb-4 rounded-2xl overflow-hidden bg-white/70 dark:bg-zinc-900/60 backdrop-blur border border-slate-200/60 dark:border-zinc-800/60 shadow-sm">
@@ -242,95 +193,31 @@
       </button>
     </div>
 
-    <!-- CATEGORIES -->
-    <div class="px-5 pb-2"><h3 class="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Expense Categories</h3></div>
-    <div class="mx-4 mb-4 rounded-2xl overflow-hidden bg-white/70 dark:bg-zinc-900/60 backdrop-blur border border-slate-200/60 dark:border-zinc-800/60 shadow-sm">
-      <div class="px-4 pt-3.5 pb-2">
-        <p class="text-[11px] font-semibold text-slate-400 dark:text-zinc-600 mb-2">Built-in</p>
-        <div class="flex flex-wrap gap-1.5">
-          <span v-for="cat in builtInCategories" :key="cat"
-            class="px-3 py-1 rounded-full text-[12px] font-bold bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400">
-            {{ cat }}
-          </span>
-        </div>
-      </div>
-      <div class="mx-4 h-px bg-slate-100 dark:bg-zinc-800"></div>
-      <div class="px-4 pt-3 pb-2">
-        <p class="text-[11px] font-semibold text-slate-400 dark:text-zinc-600 mb-2">Custom</p>
-        <div v-if="!(settings.customCategories ?? []).length" class="text-[12px] font-semibold text-slate-300 dark:text-zinc-700 py-1">None added yet.</div>
-        <div v-else class="flex flex-wrap gap-1.5">
-          <button v-for="cat in settings.customCategories" :key="cat" @click="removeCategory(cat)"
-            class="flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] font-bold transition-all active:scale-95"
-            :style="{ background: accent + '18', color: accent }">
-            {{ cat }}<X :size="10" :stroke-width="2.5" />
-          </button>
-        </div>
-      </div>
-      <div class="px-4 pt-1 pb-3.5 border-t border-slate-100 dark:border-zinc-800/60 mt-1">
-        <div class="flex items-center gap-2 mt-2">
-          <div class="flex-1 flex items-center bg-slate-50 dark:bg-zinc-800 rounded-2xl px-3 py-2.5 border-2 border-transparent focus-within:border-violet-500 transition-colors gap-2">
-            <Tag :size="14" class="text-slate-400 dark:text-zinc-600 flex-shrink-0" :stroke-width="2" />
-            <input v-model="newCategory" placeholder="New category name…" maxlength="24" @keydown.enter="addCategory"
-              class="flex-1 bg-transparent text-[14px] font-semibold text-slate-800 dark:text-zinc-100 placeholder:text-slate-300 dark:placeholder:text-zinc-600 outline-none" />
-          </div>
-          <button @click="addCategory" :disabled="!newCategory.trim()"
-            class="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all active:scale-90"
-            :style="newCategory.trim() ? { background: accent, boxShadow: `0 4px 12px ${accent}44` } : {}"
-            :class="!newCategory.trim() ? 'bg-slate-100 dark:bg-zinc-800' : ''">
-            <Plus :size="17" :style="newCategory.trim() ? { color: 'white' } : {}" :class="!newCategory.trim() ? 'text-slate-300 dark:text-zinc-600' : ''" :stroke-width="2.5" />
-          </button>
-        </div>
-        <p v-if="catError" class="text-[11px] font-bold text-rose-500 mt-1.5 px-1">{{ catError }}</p>
-      </div>
-    </div>
-
     <!-- DANGER ZONE -->
     <div class="px-5 pb-2"><h3 class="text-[11px] font-bold text-rose-500 dark:text-rose-400 uppercase tracking-widest">Danger Zone</h3></div>
     <div class="mx-4 mb-4 rounded-2xl overflow-hidden bg-white/70 dark:bg-zinc-900/60 backdrop-blur border border-rose-200/60 dark:border-rose-900/40 shadow-sm">
-      <button @click="confirmAction('all')"
-        class="w-full flex items-center gap-3 px-4 py-3.5 border-b border-rose-100 dark:border-rose-900/30 active:bg-rose-50 dark:active:bg-rose-950/20 transition-colors">
+      <button @click="dangerTarget = 'all'"
+        class="w-full flex items-center gap-3 px-4 py-3.5 active:bg-rose-50 dark:active:bg-rose-950/20 transition-colors">
         <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style="background:linear-gradient(135deg,rgba(109,40,217,0.2),rgba(139,92,246,0.12));border:1px solid rgba(139,92,246,0.3)">
           <Trash2 :size="19" style="color:#8b5cf6" :stroke-width="1.8" />
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-[14px] font-bold" style="color:#8b5cf6">Clear All Data</p>
-          <p class="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">Reset everything to zero — irreversible</p>
-        </div>
-        <ChevronRight :size="17" class="text-slate-300 dark:text-zinc-700 flex-shrink-0" :stroke-width="2" />
-      </button>
-      <button @click="confirmAction('bills')"
-        class="w-full flex items-center gap-3 px-4 py-3.5 border-b border-rose-100 dark:border-rose-900/30 active:bg-rose-50 dark:active:bg-rose-950/20 transition-colors">
-        <div class="w-11 h-11 rounded-2xl bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center flex-shrink-0">
-          <Zap :size="19" class="text-rose-500" :stroke-width="1.8" />
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-[14px] font-bold text-rose-500">Clear Bills Data</p>
-          <p class="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">Remove all bills and dues</p>
-        </div>
-        <ChevronRight :size="17" class="text-slate-300 dark:text-zinc-700 flex-shrink-0" :stroke-width="2" />
-      </button>
-      <button @click="confirmAction('grocery')"
-        class="w-full flex items-center gap-3 px-4 py-3.5 active:bg-rose-50 dark:active:bg-rose-950/20 transition-colors">
-        <div class="w-11 h-11 rounded-2xl bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center flex-shrink-0">
-          <ShoppingCart :size="19" class="text-rose-500" :stroke-width="1.8" />
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-[14px] font-bold text-rose-500">Clear Grocery Data</p>
-          <p class="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">Remove all grocery lists and items</p>
+          <p class="text-[11px] text-slate-400 dark:text-zinc-500 mt-0.5">Reset everything — irreversible</p>
         </div>
         <ChevronRight :size="17" class="text-slate-300 dark:text-zinc-700 flex-shrink-0" :stroke-width="2" />
       </button>
     </div>
 
-    <!-- Version footer -->
+    <!-- Version footer — updated to Orb DevKit -->
     <div class="mx-4 rounded-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur border border-slate-200/60 dark:border-zinc-800/60 shadow-sm px-4 py-4 flex items-center gap-3">
       <div class="relative flex-shrink-0" style="width:40px;height:40px;">
         <div class="absolute inset-0 rounded-full" style="animation:settings-cw 8s linear infinite;" :style="{ border: `1px solid ${accent}80` }"></div>
         <div class="absolute rounded-full" style="inset:7px;background:radial-gradient(circle at 40% 35%,#18181b 0%,#09090b 60%,#000 100%);" :style="{ boxShadow: `0 0 10px 2px ${accent}66` }"></div>
       </div>
       <div>
-        <p class="text-[14px] font-black text-slate-800 dark:text-zinc-100">Orb Finance</p>
-        <p class="text-[11px] text-slate-400 dark:text-zinc-500">Your Financial Universe · v1.0</p>
+        <p class="text-[14px] font-black text-slate-800 dark:text-zinc-100">Orb DevKit</p>
+        <p class="text-[11px] text-slate-400 dark:text-zinc-500">Developer Toolkit · v1.0</p>
       </div>
     </div>
     <div class="h-4"></div>
@@ -341,23 +228,25 @@
     <Transition name="fade">
       <div v-if="dangerTarget" class="fixed inset-0 z-[300] flex items-end justify-center"
         style="background:rgba(0,0,0,0.65);backdrop-filter:blur(14px)" @click.self="dangerTarget = null">
-        <div class="w-full max-w-[430px] rounded-t-[28px] border-t pb-10 px-5 pt-5"
-          :class="dangerTarget === 'all' ? 'bg-[#0e0b1e] border-purple-900/50' : 'bg-white dark:bg-zinc-900 border-rose-200/60 dark:border-rose-900/40'">
-          <div class="w-10 h-1 rounded-full self-center mx-auto mb-5" :class="dangerTarget === 'all' ? 'bg-purple-800' : 'bg-slate-200 dark:bg-zinc-700'"></div>
+        <div class="w-full max-w-[430px] rounded-t-[28px] border-t pb-10 px-5 pt-5 bg-[#0e0b1e] border-purple-900/50">
+          <div class="w-10 h-1 rounded-full self-center mx-auto mb-5 bg-purple-800"></div>
           <div class="flex justify-center mb-4">
             <div class="w-14 h-14 rounded-2xl flex items-center justify-center"
-              :style="dangerTarget === 'all' ? 'background:linear-gradient(135deg,rgba(109,40,217,0.3),rgba(139,92,246,0.15));border:1px solid rgba(139,92,246,0.4)' : 'background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2)'">
-              <component :is="dangerIcon" :size="24" :style="{ color: dangerTarget === 'all' ? '#a78bfa' : '#ef4444' }" :stroke-width="1.8" />
+              style="background:linear-gradient(135deg,rgba(109,40,217,0.3),rgba(139,92,246,0.15));border:1px solid rgba(139,92,246,0.4)">
+              <Trash2 :size="24" style="color:#a78bfa" :stroke-width="1.8" />
             </div>
           </div>
-          <p class="text-[18px] font-black text-center mb-2" :class="dangerTarget === 'all' ? 'text-purple-200' : 'text-slate-900 dark:text-zinc-50'">{{ dangerTitle }}</p>
-          <p class="text-[13px] text-center leading-relaxed mb-6" :class="dangerTarget === 'all' ? 'text-purple-400/70' : 'text-slate-500 dark:text-zinc-400'">{{ dangerDesc }}</p>
-          <button @click="executeDanger" class="w-full py-4 rounded-2xl text-[16px] font-black active:scale-[0.98] mb-3"
-            :style="dangerTarget === 'all' ? 'background:linear-gradient(135deg,#4c1d95,#7c3aed);color:white;box-shadow:0 8px 32px rgba(109,40,217,0.4)' : 'background:#ef4444;color:white;box-shadow:0 8px 32px rgba(239,68,68,0.35)'">
-            {{ dangerConfirmLabel }}
+          <p class="text-[18px] font-black text-center mb-2 text-purple-200">Clear All Data?</p>
+          <p class="text-[13px] text-center leading-relaxed mb-6 text-purple-400/70">This will permanently erase all data. Cannot be undone.</p>
+          <button @click="executeDanger"
+            class="w-full py-4 rounded-2xl text-[16px] font-black active:scale-[0.98] mb-3"
+            style="background:linear-gradient(135deg,#4c1d95,#7c3aed);color:white;box-shadow:0 8px 32px rgba(109,40,217,0.4)">
+            ⚠ Yes, Erase Everything
           </button>
-          <button @click="dangerTarget = null" class="w-full py-3.5 rounded-2xl text-[15px] font-bold active:scale-[0.98]"
-            :class="dangerTarget === 'all' ? 'bg-purple-900/30 text-purple-400' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300'">Cancel</button>
+          <button @click="dangerTarget = null"
+            class="w-full py-3.5 rounded-2xl text-[15px] font-bold active:scale-[0.98] bg-purple-900/30 text-purple-400">
+            Cancel
+          </button>
         </div>
       </div>
     </Transition>
@@ -408,17 +297,14 @@
             <div class="w-10 h-1 bg-slate-200 dark:bg-zinc-700 rounded-full self-center mb-1"></div>
             <h3 class="text-[18px] font-black text-center text-slate-900 dark:text-zinc-50">Security Question</h3>
             <p class="text-[13px] text-slate-400 dark:text-zinc-500 text-center -mt-2">Used to reset your PIN if forgotten</p>
-            <div>
-              <p class="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest mb-2 px-1">Choose a question</p>
-              <div class="flex flex-col gap-1.5">
-                <button v-for="q in securityQuestions" :key="q" @click="selectedQuestion = q"
-                  :class="['text-left px-4 py-3 rounded-xl text-[13px] font-semibold border-2 transition-all active:scale-[0.98]',
-                    selectedQuestion === q
-                      ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300'
-                      : 'border-transparent bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400']">
-                  {{ q }}
-                </button>
-              </div>
+            <div class="flex flex-col gap-1.5">
+              <button v-for="q in securityQuestions" :key="q" @click="selectedQuestion = q"
+                :class="['text-left px-4 py-3 rounded-xl text-[13px] font-semibold border-2 transition-all active:scale-[0.98]',
+                  selectedQuestion === q
+                    ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300'
+                    : 'border-transparent bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400']">
+                {{ q }}
+              </button>
             </div>
             <Transition name="dropdown">
               <input v-if="selectedQuestion" v-model="securityAnswer" type="text" autocomplete="off"
@@ -601,16 +487,14 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
 import {
-  ChevronLeft, ChevronDown, ChevronRight, Check, Smartphone,
-  Moon, Sun, Monitor, Clock, Lock, Trash2, Zap, ShoppingCart,
-  KeyRound, LayoutTemplate, Upload, Download, FileArchive,
-  AlertTriangle, CheckCircle, X, Plus, Tag,
+  ChevronLeft, ChevronDown, ChevronRight, Check,
+  Moon, Sun, Monitor, Clock, Lock,
+  Trash2, KeyRound, LayoutTemplate, Upload, Download, FileArchive,
+  AlertTriangle, CheckCircle,
 } from 'lucide-vue-next'
 import {
-  settings, saveSettings, CURRENCIES, ACCENT_COLORS, orbLog,
-  bills, groceryLists, activeListId,
-  TXNS_KEY, CARDS_KEY, SETTINGS_KEY, BILLS_KEY,
-  GROCERY_KEY,
+  settings, saveSettings, ACCENT_COLORS, orbLog,
+  TXNS_KEY, CARDS_KEY, SETTINGS_KEY, BILLS_KEY, GROCERY_KEY,
 } from '../composables/useStore'
 import { setPin, removePin, pinEnabled } from '../composables/usePin'
 import { useNav }  from '../composables/useNav'
@@ -627,7 +511,7 @@ const darkModeOptions: Array<{ value: DarkMode; label: string; icon: any }> = [
   { value: 'system',   label: 'System',   icon: Monitor },
   { value: 'adaptive', label: 'Adaptive', icon: Clock   },
 ]
-const darkModeIcon = computed(() => darkModeOptions.find(o => o.value === mode.value)?.icon ?? Moon)
+const darkModeIcon  = computed(() => darkModeOptions.find(o => o.value === mode.value)?.icon ?? Moon)
 const darkModeLabel = computed(() => {
   if (mode.value === 'light')    return 'Always light'
   if (mode.value === 'dark')     return 'Always dark'
@@ -636,67 +520,40 @@ const darkModeLabel = computed(() => {
 })
 
 // ── Accent ─────────────────────────────────────────────────
-const accentOpen = ref(false)
-const customHex  = ref(settings.value.accentColor)
+const accentOpen         = ref(false)
+const customHex          = ref(settings.value.accentColor)
 const currentAccentLabel = computed(() => ACCENT_COLORS.find(c => c.hex === settings.value.accentColor)?.label ?? 'Custom')
 function setAccent(hex: string) { customHex.value = hex; saveSettings({ accentColor: hex }) }
 function onCustomInput() { if (/^#[0-9a-fA-F]{6}$/.test(customHex.value)) saveSettings({ accentColor: customHex.value }) }
-function applyCustom()  { if (/^#[0-9a-fA-F]{6}$/.test(customHex.value)) { saveSettings({ accentColor: customHex.value }); orbLog(`Custom accent: ${customHex.value}`) } }
+function applyCustom()   { if (/^#[0-9a-fA-F]{6}$/.test(customHex.value)) { saveSettings({ accentColor: customHex.value }); orbLog(`Custom accent: ${customHex.value}`) } }
 
-// ── Balance styles ─────────────────────────────────────────
-const balanceStyles = [
+// ── Card styles ────────────────────────────────────────────
+const cardStyles = [
   {
     value: 'supreme' as const, label: 'Supreme Orb', sub: 'Orb with starfield',
-    previewStyle: (a: string) => ({ background: '#09090b', height: '56px' }),
-    overlayStyle: (a: string) => ({ background: `radial-gradient(ellipse at 50% 30%, ${a}30 0%, transparent 70%)` }),
+    previewStyle: (_a: string) => ({ background: '#09090b', height: '56px' }),
+    overlayStyle: (a: string)  => ({ background: `radial-gradient(ellipse at 50% 30%, ${a}30 0%, transparent 70%)` }),
   },
   {
     value: 'minimal' as const, label: 'Minimal Orb', sub: 'Clean & compact',
-    previewStyle: (a: string) => ({ background: 'white', height: '56px', border: '1px solid rgba(0,0,0,0.06)' }),
-    overlayStyle: (a: string) => ({ background: 'transparent' }),
+    previewStyle: (_a: string) => ({ background: 'white', height: '56px', border: '1px solid rgba(0,0,0,0.06)' }),
+    overlayStyle: (_a: string) => ({ background: 'transparent' }),
   },
   {
     value: 'neon' as const, label: 'Neon Card', sub: 'Dark gradient glow',
-    previewStyle: (a: string) => ({ background: `linear-gradient(135deg, #0f0f23, ${a}55)`, height: '56px' }),
-    overlayStyle: (a: string) => ({ background: 'transparent' }),
+    previewStyle: (a: string)  => ({ background: `linear-gradient(135deg, #0f0f23, ${a}55)`, height: '56px' }),
+    overlayStyle: (_a: string) => ({ background: 'transparent' }),
   },
   {
     value: 'glass' as const, label: 'Glass Card', sub: 'Frosted blur effect',
-    previewStyle: (a: string) => ({ background: 'rgba(255,255,255,0.08)', height: '56px', border: '1px solid rgba(255,255,255,0.18)' }),
-    overlayStyle: (a: string) => ({ background: `radial-gradient(ellipse at 30% 50%, ${a}20 0%, transparent 60%)` }),
+    previewStyle: (_a: string) => ({ background: 'rgba(255,255,255,0.08)', height: '56px', border: '1px solid rgba(255,255,255,0.18)' }),
+    overlayStyle: (a: string)  => ({ background: `radial-gradient(ellipse at 30% 50%, ${a}20 0%, transparent 60%)` }),
   },
 ]
 
-// ── Currency ───────────────────────────────────────────────
-const currencyOpen = ref(false)
-const selectedCurrency = computed(() => CURRENCIES.find(c => c.code === settings.value.currency) ?? CURRENCIES[0])
-function setCurrency(cur: typeof CURRENCIES[0]) { saveSettings({ currency: cur.code, currencySymbol: cur.symbol }); currencyOpen.value = false }
-
-// ── Preferences ────────────────────────────────────────────
-function toggleIdleLock() { saveSettings({ idleLockEnabled: !settings.value.idleLockEnabled }) }
+// ── Security ───────────────────────────────────────────────
+function toggleIdleLock()       { saveSettings({ idleLockEnabled: !settings.value.idleLockEnabled }) }
 function setIdleMinutes(m: number) { saveSettings({ idleLockMinutes: m }) }
-function toggleShake() { saveSettings({ shakeToAdd: !settings.value.shakeToAdd }) }
-
-// ── Categories ─────────────────────────────────────────────
-const builtInCategories = ['Food', 'Groceries', 'Transport', 'Utilities', 'Shopping', 'Leisure', 'Other']
-const newCategory = ref('')
-const catError    = ref('')
-
-function addCategory() {
-  const name = newCategory.value.trim()
-  if (!name) return
-  if (name.length > 24) { catError.value = 'Max 24 characters.'; return }
-  const all = [...builtInCategories, ...(settings.value.customCategories ?? [])]
-  if (all.some(c => c.toLowerCase() === name.toLowerCase())) { catError.value = 'Category already exists.'; return }
-  catError.value = ''
-  saveSettings({ customCategories: [...(settings.value.customCategories ?? []), name] })
-  orbLog(`Category added: ${name}`)
-  newCategory.value = ''
-}
-function removeCategory(name: string) {
-  saveSettings({ customCategories: (settings.value.customCategories ?? []).filter(c => c !== name) })
-  orbLog(`Category removed: ${name}`)
-}
 
 // ── PIN ────────────────────────────────────────────────────
 const showPinSetup         = ref(false)
@@ -715,7 +572,7 @@ const securityQuestions = [
   "What was the make of your first car?",
 ]
 
-function openPinSetup() { setupPin.value = ''; showPinSetup.value = true }
+function openPinSetup()  { setupPin.value = ''; showPinSetup.value = true }
 function closePinSetup() { showPinSetup.value = false; setupPin.value = '' }
 function handleSetupKey(k: string) {
   if (!k) return
@@ -737,28 +594,15 @@ async function savePinSetup() {
   orbLog('PIN security enabled')
 }
 function startChangePIN() { showPinManage.value = false; setupPin.value = ''; nextTick(() => { showPinSetup.value = true }) }
-function doRemovePin() { removePin(); showRemovePinConfirm.value = false; orbLog('PIN removed') }
+function doRemovePin()    { removePin(); showRemovePinConfirm.value = false; orbLog('PIN removed') }
 
 // ── Danger Zone ────────────────────────────────────────────
-type DangerTarget = 'all' | 'bills' | 'grocery' | null
-const dangerTarget = ref<DangerTarget>(null)
-const dangerIcon  = computed(() => dangerTarget.value === 'all' ? Trash2 : dangerTarget.value === 'bills' ? Zap : ShoppingCart)
-const dangerTitle = computed(() => dangerTarget.value === 'all' ? 'Clear All Data?' : dangerTarget.value === 'bills' ? 'Clear Bills Data?' : 'Clear Grocery Data?')
-const dangerDesc  = computed(() => dangerTarget.value === 'all' ? 'This will permanently erase all data. Cannot be undone.' : dangerTarget.value === 'bills' ? 'All bills will be permanently removed.' : 'All grocery lists will be permanently removed.')
-const dangerConfirmLabel = computed(() => dangerTarget.value === 'all' ? '⚠ Yes, Erase Everything' : dangerTarget.value === 'bills' ? 'Delete All Bills' : 'Delete All Grocery Data')
-function confirmAction(t: DangerTarget) { dangerTarget.value = t }
+const dangerTarget = ref<'all' | null>(null)
 function executeDanger() {
-  if (dangerTarget.value === 'all') {
-    Object.keys(localStorage).forEach(k => localStorage.removeItem(k))
-    orbLog('Danger: all data cleared'); dangerTarget.value = null
-    setTimeout(() => window.location.reload(), 500)
-  } else if (dangerTarget.value === 'bills') {
-    try { localStorage.removeItem(BILLS_KEY) } catch {}
-    bills.value = []; orbLog('Bills cleared'); dangerTarget.value = null
-  } else if (dangerTarget.value === 'grocery') {
-    try { localStorage.removeItem(GROCERY_KEY) } catch {}
-    groceryLists.value = []; activeListId.value = null; orbLog('Grocery cleared'); dangerTarget.value = null
-  }
+  Object.keys(localStorage).forEach(k => localStorage.removeItem(k))
+  orbLog('Danger: all data cleared')
+  dangerTarget.value = null
+  setTimeout(() => window.location.reload(), 500)
 }
 
 // ── Export / Import ────────────────────────────────────────
@@ -787,19 +631,19 @@ async function decryptData(buf: Uint8Array, password: string): Promise<string> {
   return new TextDecoder().decode(plain)
 }
 
-const showExport           = ref(false)
-const exportStep           = ref<'password'|'done'>('password')
-const exportPassword       = ref('')
+const showExport            = ref(false)
+const exportStep            = ref<'password'|'done'>('password')
+const exportPassword        = ref('')
 const exportPasswordConfirm = ref('')
-const exportError          = ref('')
+const exportError           = ref('')
 
-function openExport() { showExport.value = true; exportStep.value = 'password'; exportPassword.value = ''; exportPasswordConfirm.value = ''; exportError.value = '' }
+function openExport()  { showExport.value = true; exportStep.value = 'password'; exportPassword.value = ''; exportPasswordConfirm.value = ''; exportError.value = '' }
 function closeExport() { showExport.value = false }
 
 async function doExport() {
   exportError.value = ''
-  if (exportPassword.value.length < 6) { exportError.value = 'Password must be at least 6 characters'; return }
-  if (exportPassword.value !== exportPasswordConfirm.value) { exportError.value = 'Passwords do not match'; return }
+  if (exportPassword.value.length < 6)                         { exportError.value = 'Password must be at least 6 characters'; return }
+  if (exportPassword.value !== exportPasswordConfirm.value)    { exportError.value = 'Passwords do not match'; return }
   const payload: Record<string, string | null> = {}
   const keys = [TXNS_KEY, CARDS_KEY, SETTINGS_KEY, BILLS_KEY, GROCERY_KEY, 'orb_dark_mode']
   keys.forEach(k => { try { payload[k] = localStorage.getItem(k) } catch {} })
@@ -834,7 +678,7 @@ const importError    = ref('')
 const importLoading  = ref(false)
 const fileInputRef   = ref<HTMLInputElement | null>(null)
 
-function openImport() { showImport.value = true; importStep.value = 'file'; importFile.value = null; importPassword.value = ''; importError.value = '' }
+function openImport()  { showImport.value = true; importStep.value = 'file'; importFile.value = null; importPassword.value = ''; importError.value = '' }
 function closeImport() { showImport.value = false }
 function triggerFilePicker() { fileInputRef.value?.click() }
 function onFileSelected(e: Event) { importFile.value = (e.target as HTMLInputElement).files?.[0] ?? null; importError.value = '' }
@@ -850,7 +694,7 @@ async function doImport() {
     if (!parsed?.data || typeof parsed.data !== 'object') throw new Error('Invalid backup file')
     Object.entries(parsed.data as Record<string, string | null>).forEach(([k, v]) => {
       if (v == null) { try { localStorage.removeItem(k) } catch {} }
-      else { try { localStorage.setItem(k, v) } catch {} }
+      else           { try { localStorage.setItem(k, v) } catch {} }
     })
     importStep.value = 'done'
     orbLog('Data imported successfully')

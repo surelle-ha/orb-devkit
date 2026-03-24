@@ -86,50 +86,42 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { Home, FileCode2, FlaskConical, MoreHorizontal, Zap } from 'lucide-vue-next'
 import { useNav } from '../composables/useNav'
-import { settings, orbLog } from '../composables/useStore'
+import { settings } from '../composables/useStore'
+import { tcpConnected, toggleTcp } from '../composables/useTcp'
 
 // Page imports
-import Index from '../pages/index.vue'
-import Env from '../pages/env.vue'
-import More from '../pages/more.vue'
+import Index    from '../pages/index.vue'
+import Env      from '../pages/env.vue'
+import More     from '../pages/more.vue'
 import Settings from '../pages/settings.vue'
 import Developer from '../pages/developer.vue'
 
 const { activePage, transitionName, navigate, TAB_ORDER } = useNav()
 const accent = computed(() => settings.value.accentColor)
 
-// ── TCP state ──────────────────────────────────────────────
-const tcpConnected = ref(false)
-const tcpPort = ref(3131)
-
-function toggleTcp() {
-  tcpConnected.value = !tcpConnected.value
-  orbLog(tcpConnected.value ? `TCP started · 127.0.0.1:${tcpPort.value}` : 'TCP stopped')
-}
-
 // ── Pages ─────────────────────────────────────────────────
 const TAB_PAGES = new Set(['home', 'env', 'grocery', 'bills', 'more'])
 const isTabPage = computed(() => TAB_PAGES.has(activePage.value))
 
 const PAGE_MAP: Record<string, any> = {
-  home: Index, 
+  home: Index,
   env: Env,
   more: More,
-  settings: Settings, 
-  developer: Developer
+  settings: Settings,
+  developer: Developer,
 }
 const currentPage = computed(() => PAGE_MAP[activePage.value])
 
 const leftTabs = [
-  { id: 'home', icon: Home, label: 'home' },
-  { id: 'env', icon: FileCode2, label: 'env' },
+  { id: 'home',  icon: Home,      label: 'home' },
+  { id: 'env',   icon: FileCode2, label: 'env'  },
 ]
 const rightTabs = [
-  { id: 'more', icon: MoreHorizontal, label: 'tools' },
-  { id: 'developer', icon: FlaskConical, label: 'dev' },
+  { id: 'more',      icon: MoreHorizontal, label: 'tools' },
+  { id: 'developer', icon: FlaskConical,   label: 'dev'   },
 ]
 
 function handlePop() {
@@ -138,102 +130,54 @@ function handlePop() {
   else if (!TAB_PAGES.has(activePage.value)) navigate('more')
   history.pushState({ page: activePage.value }, '')
 }
-onMounted(() => { history.pushState({ page: activePage.value }, ''); window.addEventListener('popstate', handlePop) })
+onMounted(() => {
+  history.pushState({ page: activePage.value }, '')
+  window.addEventListener('popstate', handlePop)
+})
 onUnmounted(() => window.removeEventListener('popstate', handlePop))
 </script>
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
-.devkit-layout {
-  background: #060810;
-}
+.devkit-layout { background: #060810; }
 
-.font-mono {
-  font-family: 'JetBrains Mono', 'Courier New', monospace !important;
-}
+.font-mono { font-family: 'JetBrains Mono', 'Courier New', monospace !important; }
 
 * {
   -webkit-user-select: none !important;
   user-select: none !important;
   -webkit-touch-callout: none !important;
 }
-
-input,
-textarea {
+input, textarea {
   -webkit-user-select: text !important;
   user-select: text !important;
 }
 
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
 .page-wrap {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow-y: scroll;
-  overflow-x: hidden;
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  overflow-y: scroll; overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
   overscroll-behavior-y: contain;
 }
+.page-wrap::-webkit-scrollbar { display: none; }
 
-.page-wrap::-webkit-scrollbar {
-  display: none;
+.slide-left-enter-active, .slide-left-leave-active,
+.slide-right-enter-active, .slide-right-leave-active {
+  transition: transform .28s cubic-bezier(.35,0,.15,1), opacity .28s ease;
 }
+.slide-left-enter-from  { transform: translateX(100%);  opacity: 0; }
+.slide-left-leave-to    { transform: translateX(-20%);  opacity: 0; }
+.slide-right-enter-from { transform: translateX(-100%); opacity: 0; }
+.slide-right-leave-to   { transform: translateX(20%);   opacity: 0; }
 
-.slide-left-enter-active,
-.slide-left-leave-active,
-.slide-right-enter-active,
-.slide-right-leave-active {
-  transition: transform .28s cubic-bezier(.35, 0, .15, 1), opacity .28s ease;
-}
-
-.slide-left-enter-from {
-  transform: translateX(100%);
-  opacity: 0;
-}
-
-.slide-left-leave-to {
-  transform: translateX(-20%);
-  opacity: 0;
-}
-
-.slide-right-enter-from {
-  transform: translateX(-100%);
-  opacity: 0;
-}
-
-.slide-right-leave-to {
-  transform: translateX(20%);
-  opacity: 0;
-}
-
-/* TCP pulse ring */
 @keyframes tcp-pulse {
-
-  0%,
-  100% {
-    opacity: 0.5;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 0;
-    transform: scale(1.22);
-  }
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%       { opacity: 0;   transform: scale(1.22); }
 }
-
-.tcp-pulse-ring {
-  animation: tcp-pulse 1.6s ease-in-out infinite;
-}
+.tcp-pulse-ring { animation: tcp-pulse 1.6s ease-in-out infinite; }
 </style>

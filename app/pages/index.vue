@@ -98,7 +98,6 @@
       <div class="absolute inset-0 pointer-events-none opacity-10"
         :style="{ backgroundImage: `linear-gradient(${accent}40 1px, transparent 1px), linear-gradient(90deg, ${accent}40 1px, transparent 1px)`, backgroundSize: '40px 40px' }"></div>
       <div class="absolute top-0 left-0 right-0 h-px" :style="{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, boxShadow: `0 0 12px ${accent}` }"></div>
-      <!-- Dev mode toggle top-right -->
       <div class="absolute top-3 right-3 z-10">
         <button @click="toggleDevMode"
           class="flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all active:scale-95"
@@ -171,7 +170,6 @@
       style="background:rgba(255,255,255,0.05);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.1);box-shadow:0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);">
       <div class="absolute -top-10 -right-10 w-48 h-48 rounded-full pointer-events-none"
         :style="{ background: `radial-gradient(circle, ${accent}25 0%, transparent 70%)`, filter:'blur(20px)' }"></div>
-      <!-- Dev mode toggle -->
       <div class="absolute top-3 right-3 z-10">
         <button @click="toggleDevMode"
           class="flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all active:scale-95"
@@ -200,7 +198,7 @@
       </div>
     </div>
 
-    <!-- ── Dev Mode Status Card (shows when dev mode is ON) ── -->
+    <!-- ── Dev Mode Status Card ── -->
     <Transition name="slide-down">
       <div v-if="devMode" class="mx-4 mb-4 rounded-2xl overflow-hidden"
         :style="{ background: accent + '08', border: `1px solid ${accent}22` }">
@@ -355,9 +353,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
-import { Settings, Terminal, Wifi, Network, KeyRound, BrainCircuit, Code2 } from 'lucide-vue-next'
-import { useNav }       from '../composables/useNav'
-import { settings, appLogs, orbLog } from '../composables/useStore'
+import { Settings, Wifi, Network, KeyRound, BrainCircuit, Code2 } from 'lucide-vue-next'
+import { useNav }    from '../composables/useNav'
+import { settings, orbLog } from '../composables/useStore'
+import { tcpConnected, tcpPort, toggleTcp } from '../composables/useTcp'
 
 const { navigate } = useNav()
 const accent       = computed(() => settings.value.accentColor)
@@ -367,15 +366,6 @@ const accentRgb = computed(() => {
   const h = accent.value.replace('#', '')
   return `${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)}`
 })
-
-// ── TCP state ─────────────────────────────────────────────
-const tcpConnected = ref(false)
-const tcpPort      = ref(3131)
-
-function toggleTcp() {
-  tcpConnected.value = !tcpConnected.value
-  orbLog(tcpConnected.value ? `TCP connected · port ${tcpPort.value}` : 'TCP disconnected')
-}
 
 // ── Dev Mode ──────────────────────────────────────────────
 const DEV_MODE_KEY = 'orb_dev_mode_v1'
@@ -390,12 +380,15 @@ let devTimer: ReturnType<typeof setInterval> | null = null
 function toggleDevMode() {
   devMode.value = !devMode.value
   try { localStorage.setItem(DEV_MODE_KEY, devMode.value ? 'true' : 'false') } catch {}
-  toggleTcp()
+
+  // Sync TCP: dev mode on → TCP on; dev mode off → TCP off
   if (devMode.value) {
+    if (!tcpConnected.value) toggleTcp()
     devSessionStart.value = Date.now()
     startDevTimer()
     orbLog('Dev mode enabled')
   } else {
+    if (tcpConnected.value) toggleTcp()
     stopDevTimer()
     orbLog('Dev mode disabled')
   }
