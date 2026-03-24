@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col w-full max-w-[430px] mx-auto bg-slate-100 dark:bg-zinc-950 transition-colors duration-300"
+    class="devkit-layout flex flex-col w-full max-w-[430px] mx-auto"
     style="height:100dvh;overflow:hidden;padding-top:env(safe-area-inset-top);"
   >
     <div class="relative flex-1" style="overflow:hidden;min-height:0;">
@@ -11,46 +11,76 @@
       </Transition>
     </div>
 
-    <!-- Only show tab bar on main tab pages -->
+    <!-- Tab bar -->
     <nav v-if="isTabPage"
-      class="flex-shrink-0 flex items-center bg-white/80 dark:bg-zinc-950/90 backdrop-blur-xl border-t border-slate-200/60 dark:border-zinc-800/60 z-50"
-      style="padding-bottom:calc(8px + env(safe-area-inset-bottom));"
-    >
+      class="flex-shrink-0 flex items-center z-50"
+      style="background:rgba(6,8,16,0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,0.06);padding-bottom:calc(8px + env(safe-area-inset-bottom));">
+
       <button v-for="tab in leftTabs" :key="tab.id"
-        class="flex-1 flex flex-col items-center gap-1 pt-2 pb-1 active:scale-90 transition-transform"
+        class="flex-1 flex flex-col items-center gap-1 pt-2.5 pb-1 active:scale-90 transition-transform"
         @click="navigate(tab.id)">
-        <div :class="['w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-200',
-          activePage === tab.id ? 'bg-violet-500 shadow-lg shadow-violet-500/30' : '']">
-          <component :is="tab.icon" :size="20"
-            :color="activePage === tab.id ? 'white' : isDark ? '#52525b' : '#94a3b8'"
+        <div :class="['w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200']"
+          :style="activePage === tab.id
+            ? { background: accent + '1E', border: `1px solid ${accent}44`, boxShadow: `0 0 14px ${accent}33` }
+            : { background: 'transparent', border: '1px solid transparent' }">
+          <component :is="tab.icon" :size="17"
+            :style="activePage === tab.id ? { color: accent } : { color: '#3f3f46' }"
             :stroke-width="activePage === tab.id ? 2.2 : 1.8" />
         </div>
-        <span :class="['text-[10px] font-bold', activePage === tab.id ? 'text-violet-500' : 'text-slate-400 dark:text-zinc-600']">{{ tab.label }}</span>
+        <span class="text-[9px] font-mono font-bold"
+          :style="activePage === tab.id ? { color: accent } : { color: '#3f3f46' }">
+          {{ tab.label }}
+        </span>
       </button>
 
+      <!-- Center: TCP Start/Stop button -->
       <div class="flex-1 flex flex-col items-center pt-1 pb-1">
-        <button @click="quickAddOpen = true"
-          class="relative -mt-6 w-14 h-14 rounded-full bg-violet-500 flex items-center justify-center shadow-xl shadow-violet-500/40 active:scale-90 transition-all duration-200 border-4 border-white dark:border-zinc-950">
-          <Plus :size="26" color="white" :stroke-width="2.5" />
+        <button @click="toggleTcp"
+          class="relative -mt-5 w-13 h-13 flex items-center justify-center active:scale-90 transition-all duration-200"
+          style="width:52px;height:52px;border-radius:50%;">
+
+          <!-- Outer pulse ring when connected -->
+          <div v-if="tcpConnected"
+            class="absolute inset-0 rounded-full tcp-pulse-ring"
+            :style="{ border: `1px solid ${accent}66` }"></div>
+
+          <!-- Button face -->
+          <div class="w-full h-full rounded-full flex items-center justify-center"
+            :style="tcpConnected
+              ? { background: `radial-gradient(circle at 38% 32%, #1a1a2e, #000)`, boxShadow: `0 0 0 3px #060810, 0 0 0 4.5px ${accent}88, 0 0 24px ${accent}66` }
+              : { background: `radial-gradient(circle at 38% 32%, #18181b, #09090b)`, boxShadow: `0 0 0 3px #060810, 0 0 0 4.5px rgba(255,255,255,0.08)` }">
+
+            <!-- Connected: accent glow -->
+            <div v-if="tcpConnected" class="absolute inset-0 rounded-full"
+              :style="{ background: `radial-gradient(circle at 28% 26%, ${accent}2E 0%, transparent 55%)` }"></div>
+
+            <Zap v-if="tcpConnected" :size="20" :style="{ color: accent, position:'relative', zIndex:1 }" :stroke-width="2.5" />
+            <Zap v-else              :size="20" style="color:#3f3f46;position:relative;z-index:1" :stroke-width="1.8" />
+          </div>
         </button>
-        <span class="text-[10px] font-bold text-slate-400 dark:text-zinc-600 mt-1">Add</span>
+        <span class="text-[9px] font-mono font-bold mt-1"
+          :style="tcpConnected ? { color: accent } : { color: '#3f3f46' }">
+          {{ tcpConnected ? 'tcp·on' : 'tcp·off' }}
+        </span>
       </div>
 
       <button v-for="tab in rightTabs" :key="tab.id"
-        class="flex-1 flex flex-col items-center gap-1 pt-2 pb-1 active:scale-90 transition-transform"
+        class="flex-1 flex flex-col items-center gap-1 pt-2.5 pb-1 active:scale-90 transition-transform"
         @click="navigate(tab.id)">
-        <div :class="['relative w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-200',
-          activePage === tab.id ? 'bg-violet-500 shadow-lg shadow-violet-500/30' : '']">
-          <component :is="tab.icon" :size="20"
-            :color="activePage === tab.id ? 'white' : isDark ? '#52525b' : '#94a3b8'"
-            :stroke-width="activePage === tab.id ? 2.2 : 1.8" />
-          <!-- Overdue badge on Bills tab -->
-          <div v-if="tab.id === 'bills' && overdueBillsCount > 0 && activePage !== 'bills'"
-            class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-rose-500 flex items-center justify-center">
-            <span class="text-[9px] font-black text-white">{{ overdueBillsCount }}</span>
+        <div class="relative">
+          <div :class="['w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200']"
+            :style="activePage === tab.id
+              ? { background: accent + '1E', border: `1px solid ${accent}44`, boxShadow: `0 0 14px ${accent}33` }
+              : { background: 'transparent', border: '1px solid transparent' }">
+            <component :is="tab.icon" :size="17"
+              :style="activePage === tab.id ? { color: accent } : { color: '#3f3f46' }"
+              :stroke-width="activePage === tab.id ? 2.2 : 1.8" />
           </div>
         </div>
-        <span :class="['text-[10px] font-bold', activePage === tab.id ? 'text-violet-500' : 'text-slate-400 dark:text-zinc-600']">{{ tab.label }}</span>
+        <span class="text-[9px] font-mono font-bold"
+          :style="activePage === tab.id ? { color: accent } : { color: '#3f3f46' }">
+          {{ tab.label }}
+        </span>
       </button>
     </nav>
   </div>
@@ -62,14 +92,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
-import { Home, CreditCard, Zap, MoreHorizontal, Plus } from 'lucide-vue-next'
-import { useNav }       from '../composables/useNav'
-import { useDark }      from '../composables/useDark'
-import { quickAddOpen, settings, orbLog, overdueBillsCount } from '../composables/useStore'
-import { useShake }     from '../composables/useShake'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { Home, Code2, FlaskConical, MoreHorizontal, Zap } from 'lucide-vue-next'
+import { useNav }          from '../composables/useNav'
+import { settings, orbLog } from '../composables/useStore'
 import AddTransactionSheet from '../components/AddTransactionSheet.vue'
 import AiDownloadPill      from '../components/AiDownloadPill.vue'
+
+// Page imports
 import Index        from '../pages/index.vue'
 import Cards        from '../pages/cards.vue'
 import Grocery      from '../pages/grocery.vue'
@@ -81,27 +111,42 @@ import Transactions from '../pages/transaction.vue'
 import OrbChat      from '../components/OrbChat.vue'
 import Profile      from '../pages/profile.vue'
 import Randomizer   from '../pages/randomizer.vue'
-import BuyOrNot     from '../pages/randomizer.vue'
 import About        from '../pages/about.vue'
 
 const { activePage, transitionName, navigate, TAB_ORDER } = useNav()
-const { isDark } = useDark()
+const accent = computed(() => settings.value.accentColor)
 
-const TAB_PAGES = new Set(['home','cards','grocery','bills','more'])
-const isTabPage = computed(() => TAB_PAGES.has(activePage.value))
+// ── TCP state (shared via provide/inject or simple module-level ref) ──────
+const tcpConnected = ref(false)
+const tcpPort      = ref(3131)
 
-const PAGE_MAP: Record<string,any> = {
+function toggleTcp() {
+  tcpConnected.value = !tcpConnected.value
+  orbLog(tcpConnected.value ? `TCP started · 127.0.0.1:${tcpPort.value}` : 'TCP stopped')
+}
+
+// ── Pages ─────────────────────────────────────────────────
+const TAB_PAGES = new Set(['home', 'cards', 'grocery', 'bills', 'more'])
+const isTabPage  = computed(() => TAB_PAGES.has(activePage.value))
+
+const PAGE_MAP: Record<string, any> = {
   home: Index, cards: Cards, grocery: Grocery,
   bills: Bills, more: More,
   settings: Settings, developer: Developer,
   transactions: Transactions, orb: OrbChat,
   profile: Profile, randomizer: Randomizer,
-  buyornot: BuyOrNot, about: About,
+  about: About,
 }
 const currentPage = computed(() => PAGE_MAP[activePage.value])
 
-const leftTabs  = [{ id:'home', icon:Home, label:'Home' }, { id:'cards', icon:CreditCard, label:'Accounts' }]
-const rightTabs = [{ id:'bills', icon:Zap, label:'Bills' }, { id:'more', icon:MoreHorizontal, label:'More' }]
+const leftTabs  = [
+  { id: 'home',  icon: Home,       label: 'home'   },
+  { id: 'cards', icon: Code2,      label: 'env'    },
+]
+const rightTabs = [
+  { id: 'more',       icon: MoreHorizontal, label: 'tools'  },
+  { id: 'developer',  icon: FlaskConical,   label: 'dev'    },
+]
 
 function handlePop() {
   const idx = TAB_ORDER.indexOf(activePage.value)
@@ -111,18 +156,17 @@ function handlePop() {
 }
 onMounted(() => { history.pushState({ page: activePage.value }, ''); window.addEventListener('popstate', handlePop) })
 onUnmounted(() => window.removeEventListener('popstate', handlePop))
-
-useShake(() => {
-  if (settings.value.shakeToAdd && !quickAddOpen.value) {
-    quickAddOpen.value = true
-    orbLog('Shake triggered add-transaction')
-  }
-}, { threshold: 35, hitsRequired: 3 })
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
-.font-nunito { font-family:'Nunito',sans-serif; }
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
+
+.devkit-layout {
+  background: #060810;
+}
+
+.font-mono { font-family: 'JetBrains Mono', 'Courier New', monospace !important; }
+
 * { -webkit-user-select:none!important; user-select:none!important; -webkit-touch-callout:none!important; }
 input, textarea { -webkit-user-select:text!important; user-select:text!important; }
 .scrollbar-hide::-webkit-scrollbar { display:none; }
@@ -139,10 +183,17 @@ input, textarea { -webkit-user-select:text!important; user-select:text!important
 
 .slide-left-enter-active, .slide-left-leave-active,
 .slide-right-enter-active, .slide-right-leave-active {
-  transition: transform .32s cubic-bezier(.35,0,.15,1), opacity .32s cubic-bezier(.35,0,.15,1);
+  transition: transform .28s cubic-bezier(.35,0,.15,1), opacity .28s ease;
 }
 .slide-left-enter-from  { transform:translateX(100%);  opacity:0; }
-.slide-left-leave-to    { transform:translateX(-25%);  opacity:0; }
+.slide-left-leave-to    { transform:translateX(-20%);  opacity:0; }
 .slide-right-enter-from { transform:translateX(-100%); opacity:0; }
-.slide-right-leave-to   { transform:translateX(25%);   opacity:0; }
+.slide-right-leave-to   { transform:translateX(20%);   opacity:0; }
+
+/* TCP pulse ring */
+@keyframes tcp-pulse {
+  0%, 100% { opacity:0.5; transform:scale(1);    }
+  50%       { opacity:0;   transform:scale(1.22); }
+}
+.tcp-pulse-ring { animation: tcp-pulse 1.6s ease-in-out infinite; }
 </style>
