@@ -4,6 +4,12 @@ version = "0.1.0"
 edition = "2021"
 description = "Orb DevKit desktop daemon - secure TCP/WS bridge for the Orb mobile app"
 authors = ["Orb DevKit"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yourusername/orb-devkit"
+documentation = "https://docs.rs/orb-daemon"
+keywords = ["daemon", "websocket", "IoT", "security", "bridge"]
+categories = ["command-line-utilities", "network-programming"]
+readme = "README.md"
 
 [[bin]]
 name = "orb-daemon"

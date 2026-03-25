@@ -62,7 +62,8 @@ impl Config {
         Ok(())
     }
 
-    /// Generate a one-time pairing token valid for 5 minutes
+    /// Generate a one-time pairing token valid for 5 minutes.
+    /// Writes to disk so the running daemon process can read it.
     pub fn generate_pairing_token(&mut self) -> Result<String> {
         use rand::Rng;
         let token: String = rand::thread_rng()
@@ -73,25 +74,80 @@ impl Config {
         self.pairing_token = Some(token.clone());
         self.pairing_token_expires = Some(Utc::now() + chrono::Duration::minutes(5));
         self.save()?;
+        tracing::info!("Pairing token generated, expires in 5 minutes");
         Ok(token)
     }
 
-    /// Validate a pairing token. Returns true if valid, consuming it.
+    /// Validate and consume a pairing token.
+    ///
+    /// IMPORTANT: This reloads from disk before checking because the token is
+    /// written by the `orb-daemon pair` subprocess, while the server runs in a
+    /// separate long-lived process holding a stale in-memory Config.
+    ///
+    /// Flow:
+    ///   1. User runs `orb-daemon pair`  → writes token to ~/.orb/config.json
+    ///   2. User scans QR on phone       → phone sends Pair{token} over WebSocket
+    ///   3. Server (different process)   → calls consume_pairing_token()
+    ///   4. We reload from disk          → see the freshly-written token
+    ///   5. Token matches + not expired  → consume it, save, return true
     pub fn consume_pairing_token(&mut self, token: &str) -> bool {
-        if let (Some(stored), Some(expires)) =
-            (&self.pairing_token.clone(), self.pairing_token_expires)
-        {
-            if stored == token && Utc::now() < expires {
-                self.pairing_token = None;
-                self.pairing_token_expires = None;
-                let _ = self.save();
-                return true;
+        // Reload from disk to pick up tokens written by the 'pair' subprocess
+        match Config::load() {
+            Ok(fresh) => {
+                self.pairing_token         = fresh.pairing_token;
+                self.pairing_token_expires = fresh.pairing_token_expires;
+                // Also merge in any already-paired devices from disk
+                // so we don't lose them on save below
+                for device in fresh.paired_devices {
+                    if !self.paired_devices.iter().any(|d| d.id == device.id) {
+                        self.paired_devices.push(device);
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::warn!("consume_pairing_token: could not reload config: {}", e);
+                // Fall through and try with whatever is in memory
             }
         }
-        false
+
+        let stored  = match &self.pairing_token {
+            Some(t) => t.clone(),
+            None    => {
+                tracing::warn!("consume_pairing_token: no token in config (was 'orb-daemon pair' run?)");
+                return false;
+            }
+        };
+
+        let expires = match self.pairing_token_expires {
+            Some(t) => t,
+            None    => {
+                tracing::warn!("consume_pairing_token: token has no expiry");
+                return false;
+            }
+        };
+
+        if stored != token {
+            tracing::warn!("consume_pairing_token: token mismatch");
+            return false;
+        }
+
+        if Utc::now() >= expires {
+            tracing::warn!("consume_pairing_token: token expired at {}", expires);
+            return false;
+        }
+
+        // Valid — consume it
+        self.pairing_token         = None;
+        self.pairing_token_expires = None;
+        if let Err(e) = self.save() {
+            tracing::warn!("consume_pairing_token: failed to save after consuming: {}", e);
+        }
+        tracing::info!("Pairing token consumed successfully");
+        true
     }
 
     pub fn add_device(&mut self, device: PairedDevice) -> Result<()> {
+        // Avoid duplicates by cert_fingerprint
         self.paired_devices
             .retain(|d| d.cert_fingerprint != device.cert_fingerprint);
         self.paired_devices.push(device);

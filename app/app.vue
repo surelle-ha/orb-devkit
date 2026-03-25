@@ -24,6 +24,7 @@ import { settings }   from '~/composables/useStore'
 import { pinEnabled, lockWithPin } from '~/composables/usePin'
 import { initDatabase } from '~/utils/initDatabase'
 import { useDaemon } from '~/composables/useDaemon'
+import { reloadDevices } from '~/composables/useDevices'
 import { App as CapApp } from '@capacitor/app'
 
 type Phase = 'splash' | 'app'
@@ -87,17 +88,28 @@ onMounted(async () => {
     const { SplashScreen } = await import('@capacitor/splash-screen')
     await SplashScreen.hide()
   } catch {}
+
   initDatabase().catch(e => console.warn('[Orb] DB init:', e))
 
-  // Reconnect to daemon when app comes to foreground
-  const { connect: daemonConnect, daemonInfo } = useDaemon()
-  CapApp.addListener('appStateChange', ({ isActive }) => {
+  const { connect: daemonConnect, daemonInfo, status: daemonStatus } = useDaemon()
+
+  // Reconnect when app comes to foreground.
+  // We check daemonInfo (are we paired?) rather than status (which can be stale).
+  CapApp.addListener('appStateChange', async ({ isActive }) => {
     if (isActive && daemonInfo.value) {
+      // Small delay to let the network stack recover after backgrounding
+      await new Promise(r => setTimeout(r, 800))
+      // connect() internally checks isSocketAlive() so it's safe to call always
       daemonConnect().catch(() => {})
+      // Sync device list state from localStorage
+      reloadDevices()
     }
   })
-  // Initial connect attempt
-  if (daemonInfo.value) daemonConnect().catch(() => {})
+
+  // Initial connect attempt on startup if we have saved pairing info
+  if (daemonInfo.value) {
+    daemonConnect().catch(() => {})
+  }
 })
 
 async function onSplashDone() {

@@ -1,35 +1,37 @@
 // composables/useDaemon.ts
-// Orb Daemon client — connects to the desktop daemon over WebSocket
-// Uses ws:// (plain) for LAN connections since the daemon uses a self-signed
-// cert that mobile browsers reject. LAN-only, so plain WS is acceptable.
+// Orb Daemon client — connects to the desktop daemon over plain WebSocket (ws://)
+// The daemon listens on port 3132 (tls_port + 1) for plain WS connections.
 
 import { ref, computed } from 'vue'
 import { orbLog } from './useStore'
+import { reloadDevices } from './useDevices'
 
 // ──────────────────────────────────────────────────────────
 // TYPES
 // ──────────────────────────────────────────────────────────
 
 export interface DaemonInfo {
-  host: string
-  port: number
-  fingerprint: string
-  token: string
-  v: number
+  host:           string
+  port:           number
+  fingerprint:    string
+  token:          string
+  v:              number
+  daemonName?:    string
+  daemonVersion?: string
 }
 
 export interface PairingPayload {
-  host: string
-  port: number
-  token: string
+  host:        string
+  port:        number
+  token:       string
   fingerprint: string
-  v: number
+  v:           number
 }
 
 export type DaemonStatus = 'disconnected' | 'connecting' | 'pairing' | 'connected' | 'error'
 
 interface DaemonMessage {
-  type: string
+  type:    string
   payload: Record<string, unknown>
 }
 
@@ -45,8 +47,8 @@ const daemonInfo = ref<DaemonInfo | null>(loadDaemonInfo())
 const latencyMs  = ref<number | null>(null)
 
 let ws:             WebSocket | null = null
-let pingInterval:   ReturnType<typeof setInterval>  | null = null
-let reconnectTimer: ReturnType<typeof setTimeout>   | null = null
+let pingInterval:   ReturnType<typeof setInterval> | null = null
+let reconnectTimer: ReturnType<typeof setTimeout>  | null = null
 let seqCounter = 0
 
 export const daemonStatus    = status
@@ -88,9 +90,9 @@ export function parsePairingQR(raw: string): PairingPayload | null {
 }
 
 export async function completePairing(
-  payload: PairingPayload,
+  payload:    PairingPayload,
   deviceName: string,
-  deviceOs: string,
+  deviceOs:   string,
 ): Promise<boolean> {
   status.value = 'pairing'
   error.value  = null
@@ -101,25 +103,39 @@ export async function completePairing(
 
     orbLog(`[Orb] Socket open — sending Pair message`)
     const reply = await sendAndWait({
-      type: 'Pair',
+      type:    'Pair',
       payload: { token: payload.token, device_name: deviceName, device_os: deviceOs },
     })
 
     if (reply.type === 'PairOk') {
-      saveDaemonInfo({
+      const daemonName    = String((reply.payload as any).daemon_name    ?? 'orb-daemon')
+      const daemonVersion = String((reply.payload as any).daemon_version ?? '?')
+
+      const info: DaemonInfo = {
         host:        payload.host,
         port:        payload.port,
         fingerprint: payload.fingerprint,
         token:       payload.token,
         v:           payload.v,
-      })
+        daemonName,
+        daemonVersion,
+      }
+      saveDaemonInfo(info)
+
+      // Register the daemon as a Device entry so devices.vue shows it
+      registerDaemonAsDevice(info)
+
       status.value = 'connected'
       startPingLoop()
-      const daemonName = (reply.payload as any).daemon_name
-      orbLog(`[Orb] ✓ Paired with daemon: ${daemonName}`, 'info')
+      orbLog(`[Orb] ✓ Paired with daemon: ${daemonName} v${daemonVersion}`, 'info')
       return true
+
     } else {
-      const errMsg = (reply.payload as any).message || 'Pairing rejected by daemon'
+      const errMsg = String(
+        (reply.payload as any).message ??
+        (reply.payload as any).reason  ??
+        'Pairing rejected by daemon'
+      )
       orbLog(`[Orb] ✗ Pairing rejected: ${errMsg}`, 'error')
       error.value  = errMsg
       status.value = 'error'
@@ -137,132 +153,191 @@ export async function completePairing(
 }
 
 // ──────────────────────────────────────────────────────────
+// DEVICE REGISTRY SYNC
+// Keeps useDevices localStorage in sync with daemon state so
+// devices.vue always reflects the real connection status.
+// ──────────────────────────────────────────────────────────
+
+const DEVICES_KEY = 'orb_devices_v1'
+
+function registerDaemonAsDevice(info: DaemonInfo) {
+  try {
+    const raw  = localStorage.getItem(DEVICES_KEY)
+    const list: any[] = raw ? JSON.parse(raw) : []
+    const now  = new Date().toISOString()
+    const id   = `daemon-${info.host}`
+
+    const device = {
+      id,
+      name:      info.daemonName    ?? `orb-daemon @ ${info.host}`,
+      os:        `Desktop  · v${info.daemonVersion ?? '?'}`,
+      osVersion: info.daemonVersion ?? '',
+      cpu:       'Connected via TCP',
+      cores:     4,
+      ramGb:     16,
+      gpuName:   'N/A',
+      gpuVram:   '0GB',
+      ip:        info.host,
+      port:      info.port,
+      lastSeen:  now,
+      online:    true,
+    }
+
+    const idx = list.findIndex((d: any) => d.id === id)
+    if (idx >= 0) list[idx] = device
+    else list.push(device)
+
+    localStorage.setItem(DEVICES_KEY, JSON.stringify(list))
+    orbLog(`[Orb] Device registered: ${device.name}`)
+    // Notify the reactive useDevices store so devices.vue updates immediately
+    reloadDevices()
+  } catch (e: any) {
+    orbLog(`[Orb] Failed to register device: ${e.message}`, 'warn')
+  }
+}
+
+function markDaemonDeviceOffline() {
+  try {
+    const raw = localStorage.getItem(DEVICES_KEY)
+    if (!raw || !daemonInfo.value) return
+    const list: any[] = JSON.parse(raw)
+    const id   = `daemon-${daemonInfo.value.host}`
+    const d    = list.find((x: any) => x.id === id)
+    if (d) {
+      d.online   = false
+      d.lastSeen = new Date().toISOString()
+      localStorage.setItem(DEVICES_KEY, JSON.stringify(list))
+      reloadDevices()
+    }
+  } catch {}
+}
+
+function updateDeviceLastSeen(info: DaemonInfo) {
+  try {
+    const raw = localStorage.getItem(DEVICES_KEY)
+    if (!raw) return
+    const list: any[] = JSON.parse(raw)
+    const id = `daemon-${info.host}`
+    const d  = list.find((x: any) => x.id === id)
+    if (d) {
+      d.online   = true
+      d.lastSeen = new Date().toISOString()
+      localStorage.setItem(DEVICES_KEY, JSON.stringify(list))
+    }
+  } catch {}
+}
+
+// ──────────────────────────────────────────────────────────
 // CONNECTION
 // ──────────────────────────────────────────────────────────
 
 export async function connect(): Promise<void> {
   const info = daemonInfo.value
   if (!info) { error.value = 'Not paired — scan QR code first'; return }
-  if (status.value === 'connected' || status.value === 'connecting') return
+
+  // Guard against stale 'connected' status — check actual socket readyState
+  if (isSocketAlive()) return
+  if (status.value === 'connecting') return
+
   try {
     await openSocket(info.host, info.port)
+    registerDaemonAsDevice(info)   // mark online
     status.value = 'connected'
     startPingLoop()
+    orbLog(`[Orb] Reconnected to daemon`)
   } catch (e: any) {
     error.value  = e.message
     status.value = 'error'
+    markDaemonDeviceOffline()
     scheduleReconnect()
   }
 }
 
-/**
- * Open a plain WebSocket to the daemon.
- *
- * ANDROID FIX: On Android, WebSocket errors fire in this order:
- *   1. onerror  (with no useful info, just an Event)
- *   2. onclose  (with a close code, sometimes 1006 "abnormal closure")
- *
- * If we reject immediately on onerror, we get a race with onclose that
- * causes double-rejection. Instead we:
- *   - Set a "settled" flag so only the first rejection/resolve wins
- *   - Use a single timeout as the final backstop
- *   - Log the close code to help diagnose network issues
- */
+/** True only when the socket exists AND is in OPEN state */
+function isSocketAlive(): boolean {
+  return ws !== null && ws.readyState === WebSocket.OPEN
+}
+
 function openSocket(host: string, port: number): Promise<void> {
   return new Promise((resolve, reject) => {
-    closeSocket(false) // close any existing socket without clearing reconnect
+    // Drop any existing dead socket
+    if (ws) { try { ws.close() } catch {} ws = null }
 
     status.value = 'connecting'
     const url = `ws://${host}:${port}/ws`
     orbLog(`[Orb] Opening WebSocket: ${url}`)
 
     let settled = false
-
     const settle = (err?: Error) => {
       if (settled) return
       settled = true
       clearTimeout(connectTimeout)
-      if (err) {
-        reject(err)
-      } else {
-        resolve()
-      }
+      if (err) reject(err)
+      else resolve()
     }
+
+    const connectTimeout = setTimeout(() => {
+      orbLog(`[Orb] Connection timed out (12s): ${url}`, 'error')
+      try { socket.close() } catch {}
+      settle(new Error(
+        `Connection timed out — daemon not reachable at ${host}:${port}\n` +
+        `1. Is orb-daemon running?  (cargo run -- start)\n` +
+        `2. Same WiFi as your phone?\n` +
+        `3. Port ${port} not firewalled?`
+      ))
+    }, 12000)
 
     const socket = new WebSocket(url)
     socket.binaryType = 'arraybuffer'
 
-    // Hard timeout — if neither onopen nor onclose fires within 10s, bail
-    const connectTimeout = setTimeout(() => {
-      orbLog(`[Orb] Connection timed out after 10s (${url})`, 'error')
-      socket.close()
-      settle(new Error(`Connection timed out — is the daemon running at ${host}:${port}?`))
-    }, 10000)
-
     socket.onopen = () => {
-      orbLog(`[Orb] WebSocket opened to ${url}`)
+      orbLog(`[Orb] WebSocket opened: ${url}`)
       ws = socket
-      settle() // resolve — success
+      settle()
     }
 
     socket.onmessage = (e) => handleMessage(e.data)
 
     socket.onclose = (e) => {
-      // If we never opened, this is a connection failure
       if (!settled) {
-        const reason = closeCodeToReason(e.code, host, port)
-        orbLog(`[Orb] ✗ WebSocket closed before open (code ${e.code}): ${reason}`, 'error')
         ws = null
-        settle(new Error(reason))
+        settle(new Error(closeCodeToReason(e.code, host, port)))
         return
       }
-
-      // Was previously connected, now disconnected
       if (ws === socket) {
         ws = null
-        orbLog(`[Orb] Daemon disconnected (code ${e.code})`)
-        status.value = 'disconnected'
+        orbLog(`[Orb] Daemon disconnected (code=${e.code})`)
+        status.value    = 'disconnected'
+        latencyMs.value = null
         stopPingLoop()
+        markDaemonDeviceOffline()
         scheduleReconnect()
       }
     }
 
-    socket.onerror = (_event) => {
-      // On Android, onerror fires before onclose with no useful detail.
-      // We log it but DON'T reject here — let onclose handle the rejection
-      // so we get the close code (e.g. 1006 = network unreachable).
-      orbLog(`[Orb] WebSocket error event for ${url} — waiting for close event`, 'warn')
+    socket.onerror = () => {
+      // Android fires this before onclose — let onclose handle rejection
+      orbLog(`[Orb] WS error for ${url}`, 'warn')
     }
   })
 }
 
-/**
- * Convert WebSocket close codes into human-readable messages.
- */
 function closeCodeToReason(code: number, host: string, port: number): string {
-  switch (code) {
-    case 1000: return 'Connection closed normally'
-    case 1001: return 'Server going away'
-    case 1002: return 'Protocol error'
-    case 1003: return 'Unsupported data'
-    case 1005: return 'No status code'
-    case 1006:
-      return `Cannot reach daemon at ${host}:${port} — make sure:\n` +
-             `1. orb-daemon is running (cargo run -- start)\n` +
-             `2. Port ${port} is not blocked by a firewall\n` +
-             `3. Your phone and PC are on the same WiFi network`
-    case 1007: return 'Invalid message data'
-    case 1008: return 'Policy violation'
-    case 1009: return 'Message too large'
-    case 1011: return 'Server error'
-    case 1015: return 'TLS handshake failed'
-    default:   return `Connection failed (code ${code}) — daemon may be offline or unreachable`
-  }
+  if (code === 1006)
+    return (
+      `Cannot reach daemon at ${host}:${port}\n` +
+      `1. Run: orb-daemon start\n` +
+      `2. Same WiFi as your phone?\n` +
+      `3. Firewall blocking port ${port}?`
+    )
+  if (code === 1015) return 'TLS error — use ws:// not wss://'
+  return `Connection failed (code ${code}) — daemon offline or unreachable`
 }
 
 export function disconnect(): void {
   stopPingLoop()
-  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
+  clearReconnectTimer()
+  markDaemonDeviceOffline()
   closeSocket()
   status.value = 'disconnected'
 }
@@ -273,43 +348,54 @@ export function unpair(): void {
   orbLog('Unpaired from daemon')
 }
 
-function closeSocket(clearStatus = true) {
-  if (ws) {
-    try { ws.close() } catch {}
-    ws = null
-  }
-  if (clearStatus && status.value !== 'disconnected') {
-    status.value = 'disconnected'
-  }
+function closeSocket() {
+  if (ws) { try { ws.close() } catch {} ws = null }
+}
+
+function clearReconnectTimer() {
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
 }
 
 function scheduleReconnect() {
-  if (reconnectTimer) clearTimeout(reconnectTimer)
+  clearReconnectTimer()
+  if (!daemonInfo.value) return
   reconnectTimer = setTimeout(async () => {
-    if (daemonInfo.value && status.value === 'disconnected') {
-      orbLog('Reconnecting to daemon…')
+    if (!isSocketAlive() && daemonInfo.value) {
+      orbLog('[Orb] Attempting reconnect…')
       await connect()
     }
   }, 5000)
 }
 
 // ──────────────────────────────────────────────────────────
-// KEEP-ALIVE
+// KEEP-ALIVE PING
 // ──────────────────────────────────────────────────────────
 
 function startPingLoop() {
   stopPingLoop()
   pingInterval = setInterval(async () => {
-    if (status.value !== 'connected') return
+    // Detect zombie connections where socket died without firing onclose
+    if (!isSocketAlive()) {
+      orbLog('[Orb] Ping: socket dead, reconnecting…', 'warn')
+      status.value    = 'disconnected'
+      latencyMs.value = null
+      stopPingLoop()
+      markDaemonDeviceOffline()
+      scheduleReconnect()
+      return
+    }
+
     const seq  = ++seqCounter
     const sent = Date.now()
     try {
       const reply = await sendAndWait({ type: 'Ping', payload: { seq } }, 5000)
       if (reply.type === 'Pong') {
         latencyMs.value = Date.now() - sent
+        if (daemonInfo.value) updateDeviceLastSeen(daemonInfo.value)
       }
     } catch {
       latencyMs.value = null
+      orbLog('[Orb] Ping timeout', 'warn')
     }
   }, 10_000)
 }
@@ -327,7 +413,7 @@ export async function syncEnvs(projects: EnvProject[]): Promise<void> {
   for (const proj of projects) {
     for (const inst of proj.instances) {
       await sendAndWait({
-        type: 'SyncEnv',
+        type:    'SyncEnv',
         payload: {
           project:     proj.name,
           environment: inst.name,
@@ -340,9 +426,9 @@ export async function syncEnvs(projects: EnvProject[]): Promise<void> {
 }
 
 export async function syncSingleEnv(
-  project: string,
+  project:     string,
   environment: string,
-  vars: EnvVarLike[],
+  vars:        EnvVarLike[],
 ): Promise<void> {
   ensureConnected()
   await sendAndWait({ type: 'SyncEnv', payload: { project, environment, vars } })
@@ -373,81 +459,90 @@ export async function triggerReload(target: string): Promise<void> {
 const pendingReplies = new Map<number, {
   resolve: (msg: DaemonMessage) => void
   reject:  (e: Error) => void
+  type:    string
 }>()
 
-function handleMessage(data: ArrayBuffer | string) {
+function parseIncoming(data: ArrayBuffer | string): DaemonMessage | null {
   try {
     let json: string
     if (typeof data === 'string') {
       json = data
     } else {
-      // Strip optional 4-byte length prefix
-      const view = new DataView(data)
+      const view        = new DataView(data)
       const declaredLen = view.getUint32(0, false)
-      if (declaredLen + 4 === data.byteLength) {
-        json = new TextDecoder().decode(new Uint8Array(data, 4, declaredLen))
-      } else {
-        json = new TextDecoder().decode(data)
-      }
+      json = (declaredLen + 4 === data.byteLength)
+        ? new TextDecoder().decode(new Uint8Array(data, 4, declaredLen))
+        : new TextDecoder().decode(data)
     }
-
-    const msg = JSON.parse(json) as DaemonMessage
-
-    // Mark as connected on any valid message
-    if (status.value !== 'connected') status.value = 'connected'
-
-    // Resolve the oldest pending reply
-    const entry = pendingReplies.entries().next().value
-    if (entry) {
-      const [key, { resolve }] = entry
-      pendingReplies.delete(key)
-      resolve(msg)
-    }
+    return JSON.parse(json) as DaemonMessage
   } catch (e: any) {
-    orbLog(`Daemon parse error: ${e.message}`, 'error')
+    orbLog(`[Orb] Message parse error: ${e.message}`, 'error')
+    return null
+  }
+}
+
+function handleMessage(data: ArrayBuffer | string) {
+  const msg = parseIncoming(data)
+  if (!msg) return
+
+  if (status.value !== 'connected') status.value = 'connected'
+
+  const entry = pendingReplies.entries().next().value
+  if (entry) {
+    const [key, { resolve, type }] = entry
+    pendingReplies.delete(key)
+    orbLog(`[Orb] ← ${msg.type} (reply to ${type})`)
+    resolve(msg)
+  } else {
+    orbLog(`[Orb] ← ${msg.type} (unsolicited)`)
   }
 }
 
 function sendAndWait(
-  msg: { type: string; payload: Record<string, unknown> },
+  msg:       { type: string; payload: Record<string, unknown> },
   timeoutMs = 10_000,
 ): Promise<DaemonMessage> {
   return new Promise((resolve, reject) => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
-      reject(new Error('WebSocket not open — cannot send message'))
+    if (!isSocketAlive()) {
+      reject(new Error('WebSocket not open'))
       return
     }
 
     const seq  = ++seqCounter
     const json = JSON.stringify({ type: msg.type, payload: msg.payload })
 
-    // Send as plain JSON text — the daemon's ws_bridge handles both text and binary
-    ws.send(json)
+    orbLog(`[Orb] → ${msg.type}`)
+    try {
+      ws!.send(json)
+    } catch (e: any) {
+      reject(new Error(`Send failed for ${msg.type}: ${e.message}`))
+      return
+    }
 
-    pendingReplies.set(seq, { resolve, reject })
+    pendingReplies.set(seq, { resolve, reject, type: msg.type })
 
     setTimeout(() => {
       if (pendingReplies.has(seq)) {
         pendingReplies.delete(seq)
-        reject(new Error(`Timeout waiting for daemon reply to ${msg.type} (${timeoutMs}ms)`))
+        reject(new Error(`Timeout for ${msg.type} after ${timeoutMs}ms`))
       }
     }, timeoutMs)
   })
 }
 
 function ensureConnected() {
-  if (status.value !== 'connected') throw new Error('Not connected to daemon')
+  if (!isSocketAlive()) throw new Error('Not connected to daemon')
 }
 
 // ──────────────────────────────────────────────────────────
 // TYPE HELPERS
 // ──────────────────────────────────────────────────────────
 
-interface EnvVarLike      { key: string; value: string; type: string; secret: boolean }
-interface EnvInstanceLike { name: string; type: string; vars: EnvVarLike[] }
-interface EnvProject      { name: string; instances: EnvInstanceLike[] }
+interface EnvVarLike          { key: string; value: string; type: string; secret: boolean }
+interface EnvInstanceLike     { name: string; type: string; vars: EnvVarLike[] }
+interface EnvProject          { name: string; instances: EnvInstanceLike[] }
 interface BlockedPlatformLike { id: string; name: string; domains: string[]; enabled: boolean }
-interface VaultEntryLike  {
+interface VaultEntryLike      {
   id: number; service: string; username: string; password: string
   category: string; url: string; notes: string
 }

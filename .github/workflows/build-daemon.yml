@@ -1,0 +1,64 @@
+name: Build Daemon
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            target: x86_64-apple-darwin
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.target }}
+    
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: ./
+    
+    - name: Build
+      run: cargo build --release --target ${{ matrix.target }}
+      env:
+        RUST_BACKTRACE: 1
+    
+    - name: Run tests
+      run: cargo test --release
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: orb-daemon-${{ matrix.os }}
+        path: target/${{ matrix.target }}/release/orb-daemon${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+        retention-days: 30
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt, clippy
+    
+    - name: Check formatting
+      run: cargo fmt -- --check
+    
+    - name: Clippy
+      run: cargo clippy -- -D warnings

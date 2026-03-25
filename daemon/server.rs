@@ -7,10 +7,14 @@
 // The mobile app connects to ws://<host>:3132/ws — no TLS cert issues.
 // Both ports speak the same framed JSON protocol.
 //
-// IMPORTANT: Capacitor Android WebView sends Origin: capacitor://localhost
-// or Origin: http://localhost in WebSocket upgrade requests. tungstenite 0.24+
-// rejects these by default. We use accept_hdr_async with a custom callback
-// that explicitly allows all origins for local/LAN connections.
+// ANDROID NOTES:
+// 1. Capacitor Android WebView sends Origin: capacitor://localhost or null.
+//    tungstenite 0.24+ rejects these by default. We use accept_hdr_async_with_config
+//    with a callback that allows all origins.
+// 2. The network_security_config.xml MUST use base-config (not domain-config with
+//    CIDR notation — Android silently ignores invalid domain entries).
+// 3. WebSocket close code 1006 = network unreachable / refused connection.
+//    This usually means the port is blocked or the daemon isn't running.
 
 use anyhow::Result;
 use futures_util::{SinkExt, StreamExt};
@@ -23,10 +27,9 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Mutex;
 use tokio_rustls::TlsAcceptor;
 use tokio_tungstenite::{
-    accept_async_with_config,
+    accept_hdr_async_with_config,
     tungstenite::{
         handshake::server::{Request, Response},
-        http::StatusCode,
         Message as WsMsg,
     },
 };
@@ -38,7 +41,7 @@ use crate::message::{AppMessage, DaemonMessage, Framer};
 use crate::store::Store;
 
 // ──────────────────────────────────────────────────────────
-// PrependedStream (unchanged helper for protocol sniffing)
+// PrependedStream (helper for protocol sniffing on TLS path)
 // ──────────────────────────────────────────────────────────
 
 struct PrependedStream<S> {
@@ -118,15 +121,22 @@ pub async fn run(port: u16) -> Result<()> {
         }
     }
 
-    // Spawn plain WebSocket listener (for mobile browser / Capacitor web)
-    let plain_port = port + 1;  // default: 3132
+    // Plain WebSocket listener — mobile app connects here (ws://host:PORT+1/ws)
+    let plain_ws_port = port + 1;  // 3131 + 1 = 3132
     let plain_config = config.clone();
     let plain_store  = store.clone();
     tokio::spawn(async move {
-        if let Err(e) = run_plain_ws(plain_port, plain_config, plain_store).await {
+        if let Err(e) = run_plain_ws(plain_ws_port, plain_config, plain_store).await {
             error!("Plain WS listener error: {}", e);
         }
     });
+
+    info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    info!("  Orb Daemon started");
+    info!("  TLS port:      {} (raw TCP + wss://)", port);
+    info!("  Plain WS port: {} (ws://0.0.0.0:{}/ws)  ← mobile app", plain_ws_port, plain_ws_port);
+    info!("  Run 'orb-daemon pair' to get a pairing QR code");
+    info!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     // TLS listener (for future native clients)
     run_tls(port, config, store).await
@@ -135,11 +145,17 @@ pub async fn run(port: u16) -> Result<()> {
 // ──────────────────────────────────────────────────────────
 // PLAIN WebSocket listener  ← mobile app connects here
 //
-// FIX: Capacitor's Android WebView sends non-matching Origin headers
-// (e.g. "capacitor://localhost", "http://localhost", "null").
-// tungstenite 0.24 rejects these by default with a 403.
-// We use accept_hdr_async_with_config with a callback that allows all origins.
-// This is safe because we're only binding to LAN/localhost.
+// Accepts ws://host:3132/ws and ws://host:3132/ (any path).
+//
+// KEY FIX: Capacitor Android sends these non-standard Origins:
+//   - "capacitor://localhost"
+//   - "http://localhost"
+//   - "null"  (when loaded from file:// or capacitor://)
+// tungstenite 0.24 rejects these with 403 by default.
+// The callback below allows ALL origins for local-only binding.
+//
+// ALSO: We respond with 101 Switching Protocols even for non-/ws paths
+// so the connection always succeeds regardless of path used.
 // ──────────────────────────────────────────────────────────
 
 async fn run_plain_ws(
@@ -148,23 +164,26 @@ async fn run_plain_ws(
     store:  Arc<Mutex<Store>>,
 ) -> Result<()> {
     let addr = format!("0.0.0.0:{}", port);
-    let listener = TcpListener::bind(&addr).await?;
-    info!("Plain WS listening on {} (ws://0.0.0.0:{}/ws) ← mobile app", addr, port);
+    let listener = TcpListener::bind(&addr).await
+        .map_err(|e| anyhow::anyhow!("Failed to bind plain WS on {}: {} — is another instance running?", addr, e))?;
+
+    info!("Plain WS listening on ws://0.0.0.0:{}/ws", port);
 
     loop {
         match listener.accept().await {
             Ok((stream, peer)) => {
-                info!("Plain WS connection from {}", peer);
+                info!("Plain WS connection attempt from {}", peer);
                 let config = config.clone();
                 let store  = store.clone();
                 tokio::spawn(async move {
                     if let Err(e) = handle_plain_ws(stream, peer, config, store).await {
-                        // Downgrade handshake errors to WARN — they happen when browsers
-                        // send non-WS requests (e.g. preflight, healthcheck)
-                        if e.to_string().contains("Handshake") || e.to_string().contains("handshake") {
-                            warn!("Plain WS handshake failed from {} (likely non-WS request): {}", peer, e);
+                        // Log handshake errors at WARN — they fire for non-WS requests
+                        // (browser preflight, health checks, etc.)
+                        let msg = e.to_string();
+                        if msg.contains("andshake") || msg.contains("HTTP") || msg.contains("400") {
+                            warn!("Plain WS non-WS request from {} (ignored): {}", peer, msg);
                         } else {
-                            warn!("Plain WS handler error from {}: {}", peer, e);
+                            warn!("Plain WS error from {}: {}", peer, msg);
                         }
                     }
                 });
@@ -180,24 +199,26 @@ async fn handle_plain_ws(
     config: Arc<Mutex<Config>>,
     store:  Arc<Mutex<Store>>,
 ) -> Result<()> {
-    // Use accept_hdr_async_with_config so we can inject a custom handshake callback.
-    // The callback allows any Origin — required for Capacitor (capacitor://localhost)
-    // and browser dev (http://localhost, null, file://).
+    // Disable Nagle for lower latency on mobile
+    stream.set_nodelay(true)?;
+
+    // Accept WebSocket upgrade with permissive origin policy.
     //
-    // We also add CORS headers to the 101 Switching Protocols response so that
-    // WebView doesn't block the upgrade.
-    let ws = tokio_tungstenite::accept_hdr_async_with_config(
+    // Capacitor Android uses origin "capacitor://localhost" which tungstenite
+    // would reject by default. We accept ALL origins here — this is safe
+    // because we only bind to 0.0.0.0 on LAN and auth is done via pairing token.
+    let ws = accept_hdr_async_with_config(
         stream,
         |req: &Request, mut response: Response| {
-            // Log the origin for diagnostics
             let origin = req
                 .headers()
                 .get("origin")
                 .and_then(|v| v.to_str().ok())
                 .unwrap_or("(no origin)");
-            tracing::debug!("WS upgrade from origin: {}", origin);
+            let path = req.uri().path();
+            tracing::debug!("WS upgrade: path={} origin={}", path, origin);
 
-            // Add permissive CORS headers to the upgrade response
+            // Add permissive CORS headers — required for Capacitor WebView
             let headers = response.headers_mut();
             headers.insert(
                 "Access-Control-Allow-Origin",
@@ -207,10 +228,14 @@ async fn handle_plain_ws(
                 "Access-Control-Allow-Headers",
                 "content-type, authorization".parse().unwrap(),
             );
+            headers.insert(
+                "Access-Control-Allow-Methods",
+                "GET, POST, OPTIONS".parse().unwrap(),
+            );
 
             Ok(response)
         },
-        None, // default WebSocket config
+        None,
     )
     .await?;
 
@@ -218,23 +243,32 @@ async fn handle_plain_ws(
     let mut authenticated = false;
     let mut device_label  = String::new();
 
-    info!("Plain WS handshake OK from {}", peer);
+    info!("Plain WS connected: {}", peer);
 
     while let Some(msg_result) = rx.next().await {
         let msg = match msg_result {
             Ok(m)  => m,
-            Err(e) => { warn!("Plain WS recv error: {}", e); break; }
+            Err(e) => {
+                warn!("Plain WS recv error from {}: {}", peer, e);
+                break;
+            }
         };
 
         let bytes: Vec<u8> = match msg {
             WsMsg::Binary(b) => b,
             WsMsg::Text(t)   => t.into_bytes(),
-            WsMsg::Close(_)  => break,
-            WsMsg::Ping(p)   => { let _ = tx.send(WsMsg::Pong(p)).await; continue; }
-            _                => continue,
+            WsMsg::Close(_)  => {
+                info!("Plain WS close frame from {}", peer);
+                break;
+            }
+            WsMsg::Ping(p)   => {
+                let _ = tx.send(WsMsg::Pong(p)).await;
+                continue;
+            }
+            _ => continue,
         };
 
-        // Strip optional 4-byte length prefix
+        // Strip optional 4-byte length prefix (native client compat)
         let json_slice: &[u8] = if bytes.len() >= 4 {
             let declared = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as usize;
             if declared + 4 == bytes.len() { &bytes[4..] } else { &bytes }
@@ -245,25 +279,32 @@ async fn handle_plain_ws(
         let app_msg = match Framer::decode_app(json_slice) {
             Ok(m)  => m,
             Err(e) => {
+                warn!("Parse error from {}: {} | raw: {:?}", peer, e, std::str::from_utf8(json_slice).unwrap_or("(binary)"));
                 let reply = DaemonMessage::Error { code: "PARSE_ERROR".into(), message: e.to_string() };
-                tx.send(WsMsg::Binary(Framer::encode(&reply)?)).await?;
+                // Send as text so Capacitor WebView can decode it
+                if let Ok(json) = serde_json::to_string(&reply) {
+                    let _ = tx.send(WsMsg::Text(json)).await;
+                }
                 continue;
             }
         };
 
         let reply = route_message(&app_msg, &mut authenticated, &mut device_label, &config, &store).await;
 
-        // Send as text JSON so mobile browsers can decode easily
+        // Send as text JSON — Capacitor WebView handles text frames natively
         let json = serde_json::to_string(&reply)?;
-        tx.send(WsMsg::Text(json)).await?;
+        if let Err(e) = tx.send(WsMsg::Text(json)).await {
+            warn!("Plain WS send error to {}: {}", peer, e);
+            break;
+        }
     }
 
-    info!("Plain WS closed: {} ({})", device_label, peer);
+    info!("Plain WS disconnected: {} ({})", device_label, peer);
     Ok(())
 }
 
 // ──────────────────────────────────────────────────────────
-// TLS listener (existing behaviour, unchanged)
+// TLS listener (existing behaviour)
 // ──────────────────────────────────────────────────────────
 
 async fn run_tls(
@@ -274,7 +315,9 @@ async fn run_tls(
     let tls_config = cert::server_tls_config()?;
     let acceptor   = TlsAcceptor::from(tls_config);
     let addr       = format!("0.0.0.0:{}", port);
-    let listener   = TcpListener::bind(&addr).await?;
+    let listener   = TcpListener::bind(&addr).await
+        .map_err(|e| anyhow::anyhow!("Failed to bind TLS on {}: {}", addr, e))?;
+
     info!("TLS listening on {} (raw TCP + wss://)", addr);
 
     loop {
@@ -383,8 +426,7 @@ async fn handle_ws_stream<S>(
 where
     S: AsyncReadExt + AsyncWriteExt + Unpin,
 {
-    // Same fix as plain WS — allow all origins on TLS WS path too
-    let ws = tokio_tungstenite::accept_hdr_async_with_config(
+    let ws = accept_hdr_async_with_config(
         stream,
         |_req: &Request, mut response: Response| {
             let headers = response.headers_mut();

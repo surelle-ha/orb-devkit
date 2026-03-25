@@ -11,7 +11,7 @@ use crate::config::Config;
 pub struct PairingPayload {
     /// Daemon's hostname/IP
     pub host: String,
-    /// TCP port
+    /// Plain WebSocket port (TLS port + 1, default 3132)
     pub port: u16,
     /// One-time pairing token (5 min TTL)
     pub token: String,
@@ -23,6 +23,11 @@ pub struct PairingPayload {
 
 /// Generate a QR code and display it in the terminal
 pub async fn show_pairing_qr() -> Result<()> {
+    // Default TLS port is 3131, plain WS port is 3132 (tls_port + 1)
+    show_pairing_qr_on_port(3132).await
+}
+
+pub async fn show_pairing_qr_on_port(plain_ws_port: u16) -> Result<()> {
     let mut cfg = Config::load()?;
     cert::ensure_certs()?;
 
@@ -32,7 +37,7 @@ pub async fn show_pairing_qr() -> Result<()> {
 
     let payload = PairingPayload {
         host: host.clone(),
-        port: 3132,
+        port: plain_ws_port,  // Plain WebSocket port for mobile app
         token: token.clone(),
         fingerprint: fingerprint.clone(),
         v: 1,
@@ -61,12 +66,15 @@ pub async fn show_pairing_qr() -> Result<()> {
         println!("  {}", line);
     }
     println!();
-    println!("Host: {}:3132", host);
-    println!("Port: 3132");
-    println!("Token: {}", token);
-    println!("Fingerprint: {}...{}", &fingerprint[..8], &fingerprint[fingerprint.len()-8..]);
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("  Plain WebSocket (mobile app): ws://{}:{}/ws", host, plain_ws_port);
+    println!("  TLS port (native clients):    tls://{}:{}", host, plain_ws_port - 1);
+    println!("  Token:       {}", token);
+    println!("  Fingerprint: {}...{}", &fingerprint[..8], &fingerprint[fingerprint.len()-8..]);
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!();
-    println!("Or connect manually: orb://pair?host={}&port=3132", host);
+    println!("Make sure your phone and PC are on the same WiFi network.");
+    println!("If pairing fails, check that port {} is not blocked by a firewall.", plain_ws_port);
     println!();
 
     Ok(())
