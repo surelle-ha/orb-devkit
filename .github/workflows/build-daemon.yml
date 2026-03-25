@@ -11,31 +11,19 @@ env:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-          - os: macos-latest
-            target: x86_64-apple-darwin
+    runs-on: windows-latest
     
     steps:
     - uses: actions/checkout@v4
     
     - uses: dtolnay/rust-toolchain@stable
-      with:
-        targets: ${{ matrix.target }}
     
     - uses: Swatinem/rust-cache@v2
       with:
         workspaces: ./
     
     - name: Build
-      run: cargo build --release --target ${{ matrix.target }}
+      run: cargo build --release
       env:
         RUST_BACKTRACE: 1
     
@@ -45,12 +33,12 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: orb-daemon-${{ matrix.os }}
-        path: target/${{ matrix.target }}/release/orb-daemon${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+        name: orb-daemon-windows
+        path: target/release/orb-daemon.exe
         retention-days: 30
 
   lint:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@stable
