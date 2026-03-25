@@ -1,6 +1,7 @@
 // composables/useDaemon.ts
 // Orb Daemon client — connects to the desktop daemon over plain WebSocket (ws://)
 // The daemon listens on port 3132 (tls_port + 1) for plain WS connections.
+// IMPORTANT: Connections are only allowed when dev mode is ON.
 
 import { ref, computed } from 'vue'
 import { orbLog } from './useStore'
@@ -57,6 +58,16 @@ export const daemonConnected = computed(() => status.value === 'connected')
 export const daemonLatency   = latencyMs
 
 // ──────────────────────────────────────────────────────────
+// DEV MODE GATE
+// ──────────────────────────────────────────────────────────
+
+function isDevModeOn(): boolean {
+  try {
+    return localStorage.getItem('orb_dev_mode_v1') === 'true'
+  } catch { return false }
+}
+
+// ──────────────────────────────────────────────────────────
 // PERSISTENCE
 // ──────────────────────────────────────────────────────────
 
@@ -94,6 +105,7 @@ export async function completePairing(
   deviceName: string,
   deviceOs:   string,
 ): Promise<boolean> {
+  // Pairing is always allowed (it's what establishes the connection)
   status.value = 'pairing'
   error.value  = null
 
@@ -121,9 +133,12 @@ export async function completePairing(
         daemonVersion,
       }
       saveDaemonInfo(info)
-
-      // Register the daemon as a Device entry so devices.vue shows it
       registerDaemonAsDevice(info)
+
+      // Auto-enable dev mode on successful pairing
+      try {
+        localStorage.setItem('orb_dev_mode_v1', 'true')
+      } catch {}
 
       status.value = 'connected'
       startPingLoop()
@@ -154,8 +169,6 @@ export async function completePairing(
 
 // ──────────────────────────────────────────────────────────
 // DEVICE REGISTRY SYNC
-// Keeps useDevices localStorage in sync with daemon state so
-// devices.vue always reflects the real connection status.
 // ──────────────────────────────────────────────────────────
 
 const DEVICES_KEY = 'orb_devices_v1'
@@ -172,7 +185,7 @@ function registerDaemonAsDevice(info: DaemonInfo) {
       name:      info.daemonName    ?? `orb-daemon @ ${info.host}`,
       os:        `Desktop  · v${info.daemonVersion ?? '?'}`,
       osVersion: info.daemonVersion ?? '',
-      cpu:       'Connected via TCP',
+      cpu:       'Connected via daemon',
       cores:     4,
       ramGb:     16,
       gpuName:   'N/A',
@@ -189,7 +202,6 @@ function registerDaemonAsDevice(info: DaemonInfo) {
 
     localStorage.setItem(DEVICES_KEY, JSON.stringify(list))
     orbLog(`[Orb] Device registered: ${device.name}`)
-    // Notify the reactive useDevices store so devices.vue updates immediately
     reloadDevices()
   } catch (e: any) {
     orbLog(`[Orb] Failed to register device: ${e.message}`, 'warn')
@@ -228,20 +240,25 @@ function updateDeviceLastSeen(info: DaemonInfo) {
 }
 
 // ──────────────────────────────────────────────────────────
-// CONNECTION
+// CONNECTION — gated by dev mode
 // ──────────────────────────────────────────────────────────
 
 export async function connect(): Promise<void> {
   const info = daemonInfo.value
   if (!info) { error.value = 'Not paired — scan QR code first'; return }
 
-  // Guard against stale 'connected' status — check actual socket readyState
+  // GATE: only connect if dev mode is on
+  if (!isDevModeOn()) {
+    orbLog('[Orb] Connection blocked — dev mode is off', 'warn')
+    return
+  }
+
   if (isSocketAlive()) return
   if (status.value === 'connecting') return
 
   try {
     await openSocket(info.host, info.port)
-    registerDaemonAsDevice(info)   // mark online
+    registerDaemonAsDevice(info)
     status.value = 'connected'
     startPingLoop()
     orbLog(`[Orb] Reconnected to daemon`)
@@ -253,14 +270,12 @@ export async function connect(): Promise<void> {
   }
 }
 
-/** True only when the socket exists AND is in OPEN state */
 function isSocketAlive(): boolean {
   return ws !== null && ws.readyState === WebSocket.OPEN
 }
 
 function openSocket(host: string, port: number): Promise<void> {
   return new Promise((resolve, reject) => {
-    // Drop any existing dead socket
     if (ws) { try { ws.close() } catch {} ws = null }
 
     status.value = 'connecting'
@@ -311,12 +326,12 @@ function openSocket(host: string, port: number): Promise<void> {
         latencyMs.value = null
         stopPingLoop()
         markDaemonDeviceOffline()
-        scheduleReconnect()
+        // Only schedule reconnect if dev mode is still on
+        if (isDevModeOn()) scheduleReconnect()
       }
     }
 
     socket.onerror = () => {
-      // Android fires this before onclose — let onclose handle rejection
       orbLog(`[Orb] WS error for ${url}`, 'warn')
     }
   })
@@ -360,7 +375,7 @@ function scheduleReconnect() {
   clearReconnectTimer()
   if (!daemonInfo.value) return
   reconnectTimer = setTimeout(async () => {
-    if (!isSocketAlive() && daemonInfo.value) {
+    if (!isSocketAlive() && daemonInfo.value && isDevModeOn()) {
       orbLog('[Orb] Attempting reconnect…')
       await connect()
     }
@@ -374,14 +389,13 @@ function scheduleReconnect() {
 function startPingLoop() {
   stopPingLoop()
   pingInterval = setInterval(async () => {
-    // Detect zombie connections where socket died without firing onclose
     if (!isSocketAlive()) {
       orbLog('[Orb] Ping: socket dead, reconnecting…', 'warn')
       status.value    = 'disconnected'
       latencyMs.value = null
       stopPingLoop()
       markDaemonDeviceOffline()
-      scheduleReconnect()
+      if (isDevModeOn()) scheduleReconnect()
       return
     }
 
@@ -409,17 +423,13 @@ function stopPingLoop() {
 // ──────────────────────────────────────────────────────────
 
 export async function syncEnvs(projects: EnvProject[]): Promise<void> {
-  ensureConnected()
+  if (!isSocketAlive()) throw new Error('Not connected to daemon')
   for (const proj of projects) {
     for (const inst of proj.instances) {
-      await sendAndWait({
-        type:    'SyncEnv',
-        payload: {
-          project:     proj.name,
-          environment: inst.name,
-          vars:        inst.vars.map(v => ({ key: v.key, value: v.value, type: v.type, secret: v.secret })),
-        },
-      })
+      const vars = inst.vars.map(v => ({ key: v.key, value: v.value, type: v.type, secret: v.secret }))
+      const payload = { project: proj.name, environment: inst.name, vars }
+      const json = JSON.stringify({ type: 'SyncEnv', payload })
+      ws!.send(json)
       orbLog(`Daemon: synced ${proj.name}/${inst.name} (${inst.vars.length} vars)`)
     }
   }
@@ -430,26 +440,41 @@ export async function syncSingleEnv(
   environment: string,
   vars:        EnvVarLike[],
 ): Promise<void> {
-  ensureConnected()
-  await sendAndWait({ type: 'SyncEnv', payload: { project, environment, vars } })
-  orbLog(`Daemon: synced ${project}/${environment}`)
+  if (!isSocketAlive()) throw new Error('Not connected to daemon')
+  const payload = { project, environment, vars: vars.map(v => ({ key: v.key, value: v.value, type: v.type, secret: v.secret })) }
+  const json = JSON.stringify({ type: 'SyncEnv', payload })
+  ws!.send(json)
+  orbLog(`Daemon: synced ${project}/${environment} (${vars.length} vars)`)
 }
 
 export async function syncBlocklist(platforms: BlockedPlatformLike[]): Promise<void> {
-  ensureConnected()
-  await sendAndWait({ type: 'SyncBlocklist', payload: { platforms } })
+  if (!isSocketAlive()) throw new Error('Not connected to daemon')
+  const json = JSON.stringify({ type: 'SyncBlocklist', payload: { platforms } })
+  ws!.send(json)
   orbLog(`Daemon: blocklist synced (${platforms.filter(p => p.enabled).length} active)`)
 }
 
 export async function syncVault(entries: VaultEntryLike[]): Promise<void> {
-  ensureConnected()
-  await sendAndWait({ type: 'SyncVault', payload: { entries } })
+  if (!isSocketAlive()) throw new Error('Not connected to daemon')
+  // Map to daemon's expected format
+  const mapped = entries.map(e => ({
+    id:                 e.id,
+    service:            e.service,
+    username:           e.username,
+    encrypted_password: e.password, // daemon stores as-is, encryption is on-device
+    category:           e.category,
+    url:                e.url,
+    notes:              e.notes,
+  }))
+  const json = JSON.stringify({ type: 'SyncVault', payload: { entries: mapped } })
+  ws!.send(json)
   orbLog(`Daemon: vault synced (${entries.length} entries)`)
 }
 
 export async function triggerReload(target: string): Promise<void> {
-  ensureConnected()
-  await sendAndWait({ type: 'TriggerReload', payload: { target } })
+  if (!isSocketAlive()) throw new Error('Not connected to daemon')
+  const json = JSON.stringify({ type: 'TriggerReload', payload: { target } })
+  ws!.send(json)
 }
 
 // ──────────────────────────────────────────────────────────
@@ -528,10 +553,6 @@ function sendAndWait(
       }
     }, timeoutMs)
   })
-}
-
-function ensureConnected() {
-  if (!isSocketAlive()) throw new Error('Not connected to daemon')
 }
 
 // ──────────────────────────────────────────────────────────

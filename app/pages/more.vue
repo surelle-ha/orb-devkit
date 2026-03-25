@@ -8,19 +8,6 @@
       </h1>
     </div>
 
-    <!-- Quick-nav cards -->
-    <div class="grid grid-cols-3 gap-3 px-4 mb-5">
-      <button v-for="card in navCards" :key="card.label"
-        @click="navigate(card.page)"
-        class="flex flex-col items-center gap-2 rounded-2xl py-4 active:scale-95 transition-transform"
-        style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);">
-        <div class="w-11 h-11 rounded-2xl flex items-center justify-center" :style="{ background: accent + '14', border: `1px solid ${accent}25` }">
-          <component :is="card.icon" :size="20" :style="{ color: accent }" :stroke-width="1.8" />
-        </div>
-        <span class="text-[12px] font-mono font-bold text-zinc-400">{{ card.label }}</span>
-      </button>
-    </div>
-
     <!-- Tools -->
     <div class="px-5 pb-2">
       <p class="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">tools</p>
@@ -48,27 +35,7 @@
       </button>
     </div>
 
-    <!-- Developer -->
-    <div class="px-5 pb-2">
-      <p class="text-[10px] font-mono text-rose-500 uppercase tracking-widest">developer</p>
-    </div>
-    <div class="mx-4 mb-4 rounded-2xl overflow-hidden"
-      style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);">
-      <button @click="navigate('developer')"
-        class="w-full flex items-center gap-3 px-4 py-3.5 active:bg-rose-500/5 transition-colors">
-        <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.18);">
-          <FlaskConical :size="19" class="text-rose-500" :stroke-width="1.8" />
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-[14px] font-black font-mono text-rose-400">Developer Tools</p>
-          <p class="text-[11px] font-mono text-zinc-600 mt-0.5">Logs, reset, diagnostics, perf monitor</p>
-        </div>
-        <ChevronRight :size="15" class="text-zinc-700 flex-shrink-0" :stroke-width="2" />
-      </button>
-    </div>
-
-    <!-- Orb Tech card — shows info inline, no navigation needed -->
+    <!-- Orb Tech card -->
     <div class="mx-4 rounded-2xl px-4 py-4 flex items-center gap-3"
       style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);width:calc(100% - 32px);">
       <div class="relative flex-shrink-0" style="width:40px;height:40px;">
@@ -92,12 +59,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import {
-  ChevronRight, FlaskConical,
-  Wifi, Settings, FileCode2, Network,
-} from 'lucide-vue-next'
-import { settings }  from '../composables/useStore'
-import { useNav }    from '../composables/useNav'
+import { ChevronRight, Settings } from 'lucide-vue-next'
+import { settings } from '../composables/useStore'
+import { useNav }   from '../composables/useNav'
 
 const { navigate } = useNav()
 const accent = computed(() => settings.value.accentColor)
@@ -114,14 +78,8 @@ const orbCardCore = computed(() => ({
   borderRadius: '50%',
 }))
 
-const navCards = [
-  { icon: FileCode2, label: '.env',     page: 'env'   as const  },
-  { icon: Wifi,      label: 'speedtest', page: 'more' as const  },
-  { icon: Network,   label: 'tcp',       page: 'more' as const  },
-]
-
 const tools = [
-  { icon: Settings, label: 'Settings', sub: 'Preferences & appearance', page: 'settings' as const, badge: null },
+  { icon: Settings, label: 'Settings', sub: 'Preferences, security & advanced tools', page: 'settings' as const, badge: null },
 ]
 </script>
 

@@ -1,10 +1,10 @@
 // composables/useDevMode.ts
-// Dev mode = TCP connected + extended logging + debug overlays.
-// Toggling dev mode also toggles TCP. Single source of truth.
+// Dev mode = daemon connected + extended logging + debug overlays.
+// Toggling dev mode also connects/disconnects the daemon.
+// Single source of truth — daemon connection is GATED by dev mode.
 
 import { ref, watch } from 'vue'
 import { orbLog } from './useStore'
-import { tcpConnected, tcpPort, toggleTcp } from './useTcp'
 
 const DEV_MODE_KEY = 'orb_dev_mode_v1'
 
@@ -40,26 +40,23 @@ export function toggleDevMode() {
   try { localStorage.setItem(DEV_MODE_KEY, devMode.value ? 'true' : 'false') } catch {}
 
   if (devMode.value) {
-    // Enable TCP if not already on
-    if (!tcpConnected.value) toggleTcp()
     startDevTimer()
-    orbLog('Dev mode enabled')
+    orbLog('Dev mode enabled — daemon connections allowed')
+    // Attempt daemon reconnect when dev mode turns on
+    import('./useDaemon').then(({ connect, daemonInfo }) => {
+      if (daemonInfo.value) {
+        connect().catch(() => {})
+      }
+    })
   } else {
-    // Disconnect TCP when dev mode turns off
-    if (tcpConnected.value) toggleTcp()
+    // Disconnect daemon when dev mode turns off
+    import('./useDaemon').then(({ disconnect }) => {
+      disconnect()
+    })
     stopDevTimer()
-    orbLog('Dev mode disabled')
+    orbLog('Dev mode disabled — daemon disconnected')
   }
 }
-
-// Keep TCP state in sync: if TCP is killed externally, reflect in dev mode
-watch(tcpConnected, (connected) => {
-  if (!connected && devMode.value) {
-    devMode.value = false
-    try { localStorage.setItem(DEV_MODE_KEY, 'false') } catch {}
-    stopDevTimer()
-  }
-})
 
 // Seed timer if already active on load
 if (devMode.value) startDevTimer()

@@ -9,21 +9,15 @@ use crate::config::Config;
 /// Data encoded in the QR code - everything the app needs to connect
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PairingPayload {
-    /// Daemon's hostname/IP
     pub host: String,
-    /// Plain WebSocket port (TLS port + 1, default 3132)
     pub port: u16,
-    /// One-time pairing token (5 min TTL)
     pub token: String,
-    /// Server cert fingerprint (for TOFU pinning)
     pub fingerprint: String,
-    /// Protocol version
     pub v: u8,
 }
 
 /// Generate a QR code and display it in the terminal
 pub async fn show_pairing_qr() -> Result<()> {
-    // Default TLS port is 3131, plain WS port is 3132 (tls_port + 1)
     show_pairing_qr_on_port(3132).await
 }
 
@@ -37,7 +31,7 @@ pub async fn show_pairing_qr_on_port(plain_ws_port: u16) -> Result<()> {
 
     let payload = PairingPayload {
         host: host.clone(),
-        port: plain_ws_port,  // Plain WebSocket port for mobile app
+        port: plain_ws_port,
         token: token.clone(),
         fingerprint: fingerprint.clone(),
         v: 1,
@@ -48,40 +42,89 @@ pub async fn show_pairing_qr_on_port(plain_ws_port: u16) -> Result<()> {
     let qr_data = format!("orb-pair://{}", b64);
 
     let code = QrCode::new(qr_data.as_bytes())?;
-    let string = code
+    let qr_string = code
         .render::<char>()
         .quiet_zone(false)
         .module_dimensions(2, 1)
         .build();
 
+    // ── Orb ASCII header ──────────────────────────────────────
     println!();
-    println!("╔═══════════════════════════════════════════╗");
-    println!("║         Orb DevKit — Pair Device          ║");
-    println!("╠═══════════════════════════════════════════╣");
-    println!("║  Scan this QR code from the Orb app       ║");
-    println!("║  Token expires in 5 minutes               ║");
-    println!("╚═══════════════════════════════════════════╝");
+    println!("  ██████╗ ██████╗ ██████╗ ");
+    println!("  ██╔═══██╗██╔══██╗██╔══██╗");
+    println!("  ██║   ██║██████╔╝██████╔╝");
+    println!("  ██║   ██║██╔══██╗██╔══██╗");
+    println!("  ╚██████╔╝██║  ██║██████╔╝");
+    println!("   ╚═════╝ ╚═╝  ╚═╝╚═════╝ ");
+    println!("  ─────────────────────────");
+    println!("  D E V K I T  ·  D A E M O N");
+    println!("  v{}", env!("CARGO_PKG_VERSION"));
     println!();
-    for line in string.lines() {
+    println!("  ┌─────────────────────────────────────────────┐");
+    println!("  │              PAIR NEW DEVICE                │");
+    println!("  │                                             │");
+    println!("  │  Scan this QR code from your Orb mobile     │");
+    println!("  │  app to establish a secure connection.      │");
+    println!("  │                                             │");
+    println!("  │  ⏱  Token expires in 5 minutes             │");
+    println!("  │  🔒 Encrypted with AES-256-GCM              │");
+    println!("  └─────────────────────────────────────────────┘");
+    println!();
+
+    // Print QR code with indent
+    for line in qr_string.lines() {
         println!("  {}", line);
     }
     println!();
-    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    println!("  Plain WebSocket (mobile app): ws://{}:{}/ws", host, plain_ws_port);
-    println!("  TLS port (native clients):    tls://{}:{}", host, plain_ws_port - 1);
-    println!("  Token:       {}", token);
-    println!("  Fingerprint: {}...{}", &fingerprint[..8], &fingerprint[fingerprint.len()-8..]);
-    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+    // ── Connection details ────────────────────────────────────
+    println!("  ┌─────────────────────────────────────────────┐");
+    println!("  │  CONNECTION DETAILS                         │");
+    println!("  ├─────────────────────────────────────────────┤");
+    println!("  │  Plain WS  ▶  ws://{}:{}           │",
+        host,
+        plain_ws_port
+    );
+    println!("  │  TLS port  ▶  tls://{}:{}          │",
+        host,
+        plain_ws_port - 1
+    );
+    println!("  │                                             │");
+    println!("  │  Token  ▶  {}...{}  │",
+        &token[..8],
+        &token[token.len()-8..]
+    );
+    println!("  │  Cert   ▶  {}...{}  │",
+        &fingerprint[..8],
+        &fingerprint[fingerprint.len()-8..]
+    );
+    println!("  └─────────────────────────────────────────────┘");
     println!();
-    println!("Make sure your phone and PC are on the same WiFi network.");
-    println!("If pairing fails, check that port {} is not blocked by a firewall.", plain_ws_port);
+    println!("  ⚡ Make sure phone & PC are on the same WiFi");
+    println!("  🔥 Port {} must not be blocked by firewall", plain_ws_port);
+    println!();
+    println!("  Waiting for connection...");
     println!();
 
     Ok(())
 }
 
+/// Display daemon status ASCII header
+pub fn print_status_header(port: u16) {
+    println!();
+    println!("  ╔═══════════════════════════════════════════╗");
+    println!("  ║   ◉  ORB DEVKIT DAEMON  ·  RUNNING       ║");
+    println!("  ╠═══════════════════════════════════════════╣");
+    println!("  ║  TLS    ▶  0.0.0.0:{}                  ║", port);
+    println!("  ║  WS     ▶  0.0.0.0:{}  (mobile app)   ║", port + 1);
+    println!("  ║  mDNS   ▶  _orb._tcp.local.              ║");
+    println!("  ╠═══════════════════════════════════════════╣");
+    println!("  ║  Run: orb-daemon pair  to connect app     ║");
+    println!("  ╚═══════════════════════════════════════════╝");
+    println!();
+}
+
 async fn local_ip() -> String {
-    // Try to find the actual local LAN IP
     if let Ok(socket) = tokio::net::UdpSocket::bind("0.0.0.0:0").await {
         if socket.connect("8.8.8.8:80").await.is_ok() {
             if let Ok(addr) = socket.local_addr() {
