@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">vOrb</string>
-    <string name="title_activity_main">vOrb</string>
-    <string name="package_name">xyz.surelle.vorb</string>
-    <string name="custom_url_scheme">xyz.surelle.vorb</string>
+    <string name="app_name">Orb DevKit</string>
+    <string name="title_activity_main">Orb DevKit</string>
+    <string name="package_name">xyz.surelle.orb-devkit</string>
+    <string name="custom_url_scheme">xyz.surelle.orb-devkit</string>
 </resources>
