@@ -97,15 +97,35 @@
         </button>
       </div>
 
-      <!-- Error -->
+      <!-- Error display -->
       <Transition name="err-slide">
-        <div v-if="pairError" class="mx-4 mt-4 rounded-2xl px-4 py-3.5 flex items-start gap-3"
-          style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);">
-          <AlertCircle :size="16" class="text-rose-400 flex-shrink-0 mt-0.5" :stroke-width="2" />
-          <p class="text-[12px] font-mono text-rose-300 flex-1 leading-relaxed">{{ pairError }}</p>
-          <button @click="pairError = null" class="text-rose-700 active:text-rose-400 flex-shrink-0">
-            <X :size="14" :stroke-width="2.5" />
-          </button>
+        <div v-if="pairError" class="mx-4 mt-4 rounded-2xl overflow-hidden"
+          style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);">
+          <!-- Error header -->
+          <div class="flex items-center gap-2.5 px-4 py-3 border-b border-rose-900/30">
+            <AlertCircle :size="15" class="text-rose-400 flex-shrink-0" :stroke-width="2" />
+            <p class="text-[12px] font-black font-mono text-rose-300 flex-1">connection_failed</p>
+            <button @click="pairError = null" class="text-rose-700 active:text-rose-400 flex-shrink-0">
+              <X :size="14" :stroke-width="2.5" />
+            </button>
+          </div>
+          <!-- Error body — show each line of the message -->
+          <div class="px-4 py-3 space-y-1">
+            <p v-for="(line, i) in pairErrorLines" :key="i"
+              class="text-[11px] font-mono leading-relaxed"
+              :class="i === 0 ? 'text-rose-300' : 'text-rose-500/70'">
+              {{ line }}
+            </p>
+          </div>
+          <!-- Checklist hint -->
+          <div class="px-4 pb-3 flex flex-col gap-1.5">
+            <p class="text-[10px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1">check_these</p>
+            <div v-for="hint in connectionHints" :key="hint"
+              class="flex items-center gap-2">
+              <div class="w-1 h-1 rounded-full bg-zinc-700 flex-shrink-0"></div>
+              <p class="text-[10px] font-mono text-zinc-600">{{ hint }}</p>
+            </div>
+          </div>
         </div>
       </Transition>
     </template>
@@ -262,11 +282,20 @@
       </div>
 
       <Transition name="err-slide">
-        <div v-if="pairError" class="mx-4 mb-4 rounded-2xl px-4 py-3.5 flex items-start gap-3"
-          style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);">
-          <AlertCircle :size="16" class="text-rose-400 flex-shrink-0 mt-0.5" :stroke-width="2" />
-          <p class="text-[12px] font-mono text-rose-300 flex-1">{{ pairError }}</p>
-          <button @click="pairError = null" class="text-rose-700"><X :size="13" :stroke-width="2.5" /></button>
+        <div v-if="pairError" class="mx-4 mb-4 rounded-2xl overflow-hidden"
+          style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);">
+          <div class="flex items-center gap-2.5 px-4 py-3 border-b border-rose-900/30">
+            <AlertCircle :size="15" class="text-rose-400 flex-shrink-0" :stroke-width="2" />
+            <p class="text-[12px] font-black font-mono text-rose-300 flex-1">connection_failed</p>
+            <button @click="pairError = null" class="text-rose-700"><X :size="13" :stroke-width="2.5" /></button>
+          </div>
+          <div class="px-4 py-3 space-y-1">
+            <p v-for="(line, i) in pairErrorLines" :key="i"
+              class="text-[11px] font-mono leading-relaxed"
+              :class="i === 0 ? 'text-rose-300' : 'text-rose-500/70'">
+              {{ line }}
+            </p>
+          </div>
         </div>
       </Transition>
     </template>
@@ -333,7 +362,7 @@
         </div>
       </div>
 
-      <button @click="$emit('close')"
+      <button @click="emit('close')"
         class="mx-4 w-[calc(100%-32px)] flex items-center justify-center gap-2.5 py-4 rounded-2xl text-[15px] font-black font-mono active:scale-[0.98] transition-all"
         style="background:#10b981;color:white;box-shadow:0 8px 28px rgba(16,185,129,0.35);">
         <Check :size="17" :stroke-width="2.5" />
@@ -353,7 +382,8 @@ import {
 import { settings, orbLog } from '../composables/useStore'
 import { useDaemon, parsePairingQR, type PairingPayload } from '../composables/useDaemon'
 
-defineEmits(['close'])
+// ── FIX: proper emit declaration — this is what $emit('close') needs ──
+const emit = defineEmits<{ close: [] }>()
 
 const accent = computed(() => settings.value.accentColor)
 const { completePairing } = useDaemon()
@@ -375,6 +405,19 @@ let mediaStream:  MediaStream | null = null
 let scanInterval: ReturnType<typeof setTimeout> | null = null
 let rafId:        number | null = null
 let zxingReader:  any = null
+
+// ── Error helpers ──────────────────────────────────────────
+// Split multi-line error into array for display
+const pairErrorLines = computed(() =>
+  (pairError.value ?? '').split('\n').filter(l => l.trim())
+)
+
+const connectionHints = [
+  'orb-daemon is running on your PC',
+  'Your phone & PC are on the same WiFi',
+  `Port 3132 is not blocked by a firewall`,
+  'Token has not expired (5 min limit)',
+]
 
 // ── Step meta ─────────────────────────────────────────────
 const stepTitle = computed(() => {
@@ -433,12 +476,13 @@ const manualFormValid = computed(() =>
 )
 
 // ── Navigation ─────────────────────────────────────────────
+// FIX: use the emit declared above — no more getCurrentInstance() hack
 function handleBack() {
   if (step.value === 'scanning') { cancelScan(); return }
-  if (step.value !== 'idle')     { step.value = 'idle'; return }
-  // emit close if already on idle
-  // @ts-ignore
-  getCurrentInstance()?.emit('close')
+  if (step.value === 'manual')   { step.value = 'idle'; return }
+  if (step.value === 'paired')   { emit('close'); return }
+  // idle → close the whole panel
+  emit('close')
 }
 
 // ── Camera / QR scanning ───────────────────────────────────
@@ -454,7 +498,6 @@ async function startScan() {
     try {
       const cap = (window as any).Capacitor
       if (cap && cap.isNativePlatform?.()) {
-        // Attempt to request camera permission through Capacitor if available
         const camera = cap.Plugins?.Camera
         if (camera?.checkPermissions) {
           const status = await camera.checkPermissions()
@@ -476,7 +519,6 @@ async function startScan() {
 
     videoRef.value.srcObject = mediaStream
 
-    // Wait for video to actually be playing before scanning
     await new Promise<void>((resolve, reject) => {
       const v = videoRef.value!
       v.onloadedmetadata = () => {
@@ -488,7 +530,6 @@ async function startScan() {
     cameraLoading.value = false
     scanStatus.value = 'Camera ready — point at QR code'
 
-    // Try native BarcodeDetector first (Android Chrome, Samsung Browser)
     if ('BarcodeDetector' in window) {
       startNativeDetector()
     } else {
@@ -533,7 +574,7 @@ function startNativeDetector() {
   rafId = requestAnimationFrame(tick)
 }
 
-// Strategy 2: @zxing/library with decodeFromVideoDevice (correct API for v0.21+)
+// Strategy 2: @zxing/library with canvas polling
 function startZxingScanner() {
   scanStatus.value = 'Scanning (zxing)…'
   import('@zxing/library').then(({ BrowserMultiFormatReader }) => {
@@ -544,8 +585,6 @@ function startZxingScanner() {
     const videoEl = videoRef.value
     if (!videoEl) return
 
-    // decodeFromStream is the correct method for an already-running video element
-    // We use a canvas polling approach since the stream is already attached
     const canvas = document.createElement('canvas')
     const ctx    = canvas.getContext('2d', { willReadFrequently: true })!
 
@@ -574,18 +613,16 @@ function startZxingScanner() {
 
     poll()
   }).catch(() => {
-    // Final fallback: canvas + raw ImageData approach
     startCanvasPolling()
   })
 }
 
-// Strategy 3: Pure canvas polling — works everywhere, decode via ZXing WASM or skip
+// Strategy 3: Pure canvas polling with jsqr
 function startCanvasPolling() {
   scanStatus.value = 'Scanning (canvas)…'
   const canvas = document.createElement('canvas')
   const ctx    = canvas.getContext('2d', { willReadFrequently: true })!
 
-  // Try to dynamically load jsqr if available
   const tryDecode = async (imageData: ImageData): Promise<string | null> => {
     try {
       const { default: jsQR } = await import('jsqr' as any)
@@ -622,7 +659,6 @@ function startCanvasPolling() {
 }
 
 function stopCamera() {
-  // Cancel all scanner strategies
   if (rafId !== null)    { cancelAnimationFrame(rafId); rafId = null }
   if (scanInterval)      { clearTimeout(scanInterval);  scanInterval = null }
   if (zxingReader)       { try { zxingReader.reset() } catch {} zxingReader = null }
@@ -670,7 +706,7 @@ async function doPairing(payload: PairingPayload) {
   pairError.value        = null
   step.value             = 'connecting'
   connectingLabel.value  = 'Establishing connection…'
-  connectingHost.value   = `${payload.host}:${payload.port}`
+  connectingHost.value   = `ws://${payload.host}:${payload.port}`
 
   orbLog(`[Pairing] Connecting to ${payload.host}:${payload.port}`)
 
@@ -691,12 +727,13 @@ async function doPairing(payload: PairingPayload) {
       pairedHost.value       = `${payload.host}:${payload.port}`
       step.value             = 'paired'
     } else {
-      const errMsg = 'Pairing failed. Check that your token is valid (expires in 5 min) and the daemon is running.'
-      orbLog(`[Pairing] ✗ Failed: ${errMsg}`, 'error')
+      const errMsg = 'Pairing rejected by daemon.\nCheck that your token is valid (expires in 5 min) and the daemon is running.'
+      orbLog(`[Pairing] ✗ Failed`, 'error')
       pairError.value = errMsg
       step.value      = 'idle'
     }
   } catch (error: any) {
+    // Pass the full error message through — useDaemon now provides detailed close code reasons
     const errMsg = error?.message || 'Unknown connection error'
     orbLog(`[Pairing] ✗ Error: ${errMsg}`, 'error')
     pairError.value = errMsg
@@ -762,7 +799,4 @@ onBeforeUnmount(() => {
 .err-slide-leave-active { transition: all 0.2s ease; }
 .err-slide-enter-from   { opacity: 0; transform: translateY(-8px) scale(0.97); }
 .err-slide-leave-to     { opacity: 0; transform: translateY(-4px) scale(0.98); }
-
-/* Step indicator pill */
-.scrollbar-hide::-webkit-scrollbar { display: none; }
 </style>

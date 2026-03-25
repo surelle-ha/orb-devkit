@@ -6,6 +6,11 @@
 //
 // The mobile app connects to ws://<host>:3132/ws — no TLS cert issues.
 // Both ports speak the same framed JSON protocol.
+//
+// IMPORTANT: Capacitor Android WebView sends Origin: capacitor://localhost
+// or Origin: http://localhost in WebSocket upgrade requests. tungstenite 0.24+
+// rejects these by default. We use accept_hdr_async with a custom callback
+// that explicitly allows all origins for local/LAN connections.
 
 use anyhow::Result;
 use futures_util::{SinkExt, StreamExt};
@@ -17,7 +22,14 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, ReadBuf};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::Mutex;
 use tokio_rustls::TlsAcceptor;
-use tokio_tungstenite::{accept_async_with_config, tungstenite::Message as WsMsg};
+use tokio_tungstenite::{
+    accept_async_with_config,
+    tungstenite::{
+        handshake::server::{Request, Response},
+        http::StatusCode,
+        Message as WsMsg,
+    },
+};
 use tracing::{error, info, warn};
 
 use crate::cert;
@@ -122,6 +134,12 @@ pub async fn run(port: u16) -> Result<()> {
 
 // ──────────────────────────────────────────────────────────
 // PLAIN WebSocket listener  ← mobile app connects here
+//
+// FIX: Capacitor's Android WebView sends non-matching Origin headers
+// (e.g. "capacitor://localhost", "http://localhost", "null").
+// tungstenite 0.24 rejects these by default with a 403.
+// We use accept_hdr_async_with_config with a callback that allows all origins.
+// This is safe because we're only binding to LAN/localhost.
 // ──────────────────────────────────────────────────────────
 
 async fn run_plain_ws(
@@ -141,7 +159,13 @@ async fn run_plain_ws(
                 let store  = store.clone();
                 tokio::spawn(async move {
                     if let Err(e) = handle_plain_ws(stream, peer, config, store).await {
-                        warn!("Plain WS handler error from {}: {}", peer, e);
+                        // Downgrade handshake errors to WARN — they happen when browsers
+                        // send non-WS requests (e.g. preflight, healthcheck)
+                        if e.to_string().contains("Handshake") || e.to_string().contains("handshake") {
+                            warn!("Plain WS handshake failed from {} (likely non-WS request): {}", peer, e);
+                        } else {
+                            warn!("Plain WS handler error from {}: {}", peer, e);
+                        }
                     }
                 });
             }
@@ -156,7 +180,40 @@ async fn handle_plain_ws(
     config: Arc<Mutex<Config>>,
     store:  Arc<Mutex<Store>>,
 ) -> Result<()> {
-    let ws = accept_async_with_config(stream, None).await?;
+    // Use accept_hdr_async_with_config so we can inject a custom handshake callback.
+    // The callback allows any Origin — required for Capacitor (capacitor://localhost)
+    // and browser dev (http://localhost, null, file://).
+    //
+    // We also add CORS headers to the 101 Switching Protocols response so that
+    // WebView doesn't block the upgrade.
+    let ws = tokio_tungstenite::accept_hdr_async_with_config(
+        stream,
+        |req: &Request, mut response: Response| {
+            // Log the origin for diagnostics
+            let origin = req
+                .headers()
+                .get("origin")
+                .and_then(|v| v.to_str().ok())
+                .unwrap_or("(no origin)");
+            tracing::debug!("WS upgrade from origin: {}", origin);
+
+            // Add permissive CORS headers to the upgrade response
+            let headers = response.headers_mut();
+            headers.insert(
+                "Access-Control-Allow-Origin",
+                "*".parse().unwrap(),
+            );
+            headers.insert(
+                "Access-Control-Allow-Headers",
+                "content-type, authorization".parse().unwrap(),
+            );
+
+            Ok(response)
+        },
+        None, // default WebSocket config
+    )
+    .await?;
+
     let (mut tx, mut rx) = ws.split();
     let mut authenticated = false;
     let mut device_label  = String::new();
@@ -326,7 +383,18 @@ async fn handle_ws_stream<S>(
 where
     S: AsyncReadExt + AsyncWriteExt + Unpin,
 {
-    let ws = accept_async_with_config(stream, None).await?;
+    // Same fix as plain WS — allow all origins on TLS WS path too
+    let ws = tokio_tungstenite::accept_hdr_async_with_config(
+        stream,
+        |_req: &Request, mut response: Response| {
+            let headers = response.headers_mut();
+            headers.insert("Access-Control-Allow-Origin", "*".parse().unwrap());
+            Ok(response)
+        },
+        None,
+    )
+    .await?;
+
     let (mut tx, mut rx) = ws.split();
     let mut authenticated = false;
     let mut device_label  = String::new();

@@ -96,9 +96,10 @@ export async function completePairing(
   error.value  = null
 
   try {
-    orbLog(`[Orb] Sending pairing request: ${deviceName} / ${deviceOs}`)
+    orbLog(`[Orb] Connecting to daemon at ${payload.host}:${payload.port}`)
     await openSocket(payload.host, payload.port)
 
+    orbLog(`[Orb] Socket open — sending Pair message`)
     const reply = await sendAndWait({
       type: 'Pair',
       payload: { token: payload.token, device_name: deviceName, device_os: deviceOs },
@@ -118,7 +119,7 @@ export async function completePairing(
       orbLog(`[Orb] ✓ Paired with daemon: ${daemonName}`, 'info')
       return true
     } else {
-      const errMsg = (reply.payload as any).message || 'Pairing rejected'
+      const errMsg = (reply.payload as any).message || 'Pairing rejected by daemon'
       orbLog(`[Orb] ✗ Pairing rejected: ${errMsg}`, 'error')
       error.value  = errMsg
       status.value = 'error'
@@ -130,6 +131,7 @@ export async function completePairing(
     orbLog(`[Orb] ✗ Pairing error: ${errMsg}`, 'error')
     error.value  = errMsg
     status.value = 'error'
+    closeSocket()
     return false
   }
 }
@@ -155,64 +157,107 @@ export async function connect(): Promise<void> {
 
 /**
  * Open a plain WebSocket to the daemon.
- * We use ws:// on port 3132 (plain WebSocket, no TLS) because:
- * 1. The daemon uses a self-signed cert → wss:// fails with CertificateUnknown
- * 2. This is LAN-only (192.168.x.x / 127.0.0.1) — plain WS is safe
- * 3. Port 3132 is the web/Capacitor endpoint, port 3131 is TLS for future native clients
  *
- * Note: Capacitor will block HTTPS→ws:// mixed content, but we configure
- * allow_insecure_connect to permit WS to private IPs.
+ * ANDROID FIX: On Android, WebSocket errors fire in this order:
+ *   1. onerror  (with no useful info, just an Event)
+ *   2. onclose  (with a close code, sometimes 1006 "abnormal closure")
+ *
+ * If we reject immediately on onerror, we get a race with onclose that
+ * causes double-rejection. Instead we:
+ *   - Set a "settled" flag so only the first rejection/resolve wins
+ *   - Use a single timeout as the final backstop
+ *   - Log the close code to help diagnose network issues
  */
 function openSocket(host: string, port: number): Promise<void> {
   return new Promise((resolve, reject) => {
     closeSocket(false) // close any existing socket without clearing reconnect
 
     status.value = 'connecting'
-    const url = `ws://${host}:3132/ws`
-    orbLog(`Connecting to daemon ${url}`)
+    const url = `ws://${host}:${port}/ws`
+    orbLog(`[Orb] Opening WebSocket: ${url}`)
+
+    let settled = false
+
+    const settle = (err?: Error) => {
+      if (settled) return
+      settled = true
+      clearTimeout(connectTimeout)
+      if (err) {
+        reject(err)
+      } else {
+        resolve()
+      }
+    }
 
     const socket = new WebSocket(url)
     socket.binaryType = 'arraybuffer'
 
-    const timeout = setTimeout(() => {
+    // Hard timeout — if neither onopen nor onclose fires within 10s, bail
+    const connectTimeout = setTimeout(() => {
+      orbLog(`[Orb] Connection timed out after 10s (${url})`, 'error')
       socket.close()
-      reject(new Error(`Connection timed out (${url})`))
-    }, 8000)
+      settle(new Error(`Connection timed out — is the daemon running at ${host}:${port}?`))
+    }, 10000)
 
     socket.onopen = () => {
-      clearTimeout(timeout)
+      orbLog(`[Orb] WebSocket opened to ${url}`)
       ws = socket
-      orbLog(`[Orb] ✓ WebSocket connected to ${host}:${port}`)
-      resolve()
+      settle() // resolve — success
     }
 
     socket.onmessage = (e) => handleMessage(e.data)
 
     socket.onclose = (e) => {
-      clearTimeout(timeout)
+      // If we never opened, this is a connection failure
+      if (!settled) {
+        const reason = closeCodeToReason(e.code, host, port)
+        orbLog(`[Orb] ✗ WebSocket closed before open (code ${e.code}): ${reason}`, 'error')
+        ws = null
+        settle(new Error(reason))
+        return
+      }
+
+      // Was previously connected, now disconnected
       if (ws === socket) {
         ws = null
-        if (status.value === 'connected') {
-          orbLog(`[Orb] Daemon disconnected (code ${e.code}, reason: ${e.reason || 'unknown'})`)
-          status.value = 'disconnected'
-          stopPingLoop()
-          scheduleReconnect()
-        }
+        orbLog(`[Orb] Daemon disconnected (code ${e.code})`)
+        status.value = 'disconnected'
+        stopPingLoop()
+        scheduleReconnect()
       }
     }
 
-    socket.onerror = (event) => {
-      clearTimeout(timeout)
-      const msg = `WebSocket error connecting to ws://${host}:3132 — daemon may be offline or network unreachable`
-      orbLog(`[Orb] ✗ ${msg}`, 'error')
-      error.value = msg
-      if (status.value === 'connecting') {
-        // Try to provide more specific error info
-        console.error('[Orb] Connection error:', event)
-        reject(new Error(msg))
-      }
+    socket.onerror = (_event) => {
+      // On Android, onerror fires before onclose with no useful detail.
+      // We log it but DON'T reject here — let onclose handle the rejection
+      // so we get the close code (e.g. 1006 = network unreachable).
+      orbLog(`[Orb] WebSocket error event for ${url} — waiting for close event`, 'warn')
     }
   })
+}
+
+/**
+ * Convert WebSocket close codes into human-readable messages.
+ */
+function closeCodeToReason(code: number, host: string, port: number): string {
+  switch (code) {
+    case 1000: return 'Connection closed normally'
+    case 1001: return 'Server going away'
+    case 1002: return 'Protocol error'
+    case 1003: return 'Unsupported data'
+    case 1005: return 'No status code'
+    case 1006:
+      return `Cannot reach daemon at ${host}:${port} — make sure:\n` +
+             `1. orb-daemon is running (cargo run -- start)\n` +
+             `2. Port ${port} is not blocked by a firewall\n` +
+             `3. Your phone and PC are on the same WiFi network`
+    case 1007: return 'Invalid message data'
+    case 1008: return 'Policy violation'
+    case 1009: return 'Message too large'
+    case 1011: return 'Server error'
+    case 1015: return 'TLS handshake failed'
+    default:   return `Connection failed (code ${code}) — daemon may be offline or unreachable`
+  }
 }
 
 export function disconnect(): void {
@@ -369,7 +414,7 @@ function sendAndWait(
 ): Promise<DaemonMessage> {
   return new Promise((resolve, reject) => {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      reject(new Error('WebSocket not open'))
+      reject(new Error('WebSocket not open — cannot send message'))
       return
     }
 
@@ -384,7 +429,7 @@ function sendAndWait(
     setTimeout(() => {
       if (pendingReplies.has(seq)) {
         pendingReplies.delete(seq)
-        reject(new Error(`Timeout waiting for reply to ${msg.type}`))
+        reject(new Error(`Timeout waiting for daemon reply to ${msg.type} (${timeoutMs}ms)`))
       }
     }, timeoutMs)
   })
