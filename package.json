@@ -1,5 +1,5 @@
 {
-  "name": "vorb",
+  "name": "orb-devkit",
   "type": "module",
   "private": true,
   "scripts": {
@@ -8,6 +8,8 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
+    "daemon:build": "cargo build --release",
+    "daemon:dev": "cargo run -- start",
     "android:sync": "cap sync",
     "android:run": "cap run android",
     "android:studio": "cap open android"
