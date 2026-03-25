@@ -13,6 +13,7 @@ A mobile companion app for the Orb daemon, enabling seamless synchronization of 
 
 ## Quick Start
 
+
 ### Prerequisites
 
 - Node.js 18+
