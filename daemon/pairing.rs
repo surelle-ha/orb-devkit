@@ -32,8 +32,8 @@ pub async fn show_pairing_qr() -> Result<()> {
 
     let payload = PairingPayload {
         host: host.clone(),
-        port: 3131,
-        token,
+        port: 3132,
+        token: token.clone(),
         fingerprint: fingerprint.clone(),
         v: 1,
     };
@@ -61,10 +61,12 @@ pub async fn show_pairing_qr() -> Result<()> {
         println!("  {}", line);
     }
     println!();
-    println!("Host: {}:3131", host);
+    println!("Host: {}:3132", host);
+    println!("Port: 3132");
+    println!("Token: {}", token);
     println!("Fingerprint: {}...{}", &fingerprint[..8], &fingerprint[fingerprint.len()-8..]);
     println!();
-    println!("Or connect manually: orb://pair?host={}&port=3131", host);
+    println!("Or connect manually: orb://pair?host={}&port=3132", host);
     println!();
 
     Ok(())

@@ -212,7 +212,7 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1 block">PORT</label>
-            <input v-model.number="manualForm.port" type="number" placeholder="3131"
+            <input v-model.number="manualForm.port" type="number" placeholder="3132"
               class="w-full rounded-xl px-4 py-3 text-[14px] font-mono font-bold text-zinc-100 placeholder:text-zinc-700 outline-none"
               style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);" />
           </div>
@@ -350,7 +350,7 @@ import {
   ChevronLeft, QrCode, Keyboard, Check,
   AlertCircle, X, Info,
 } from 'lucide-vue-next'
-import { settings } from '../composables/useStore'
+import { settings, orbLog } from '../composables/useStore'
 import { useDaemon, parsePairingQR, type PairingPayload } from '../composables/useDaemon'
 
 defineEmits(['close'])
@@ -422,7 +422,7 @@ const pairedFeatures = [
 // ── Manual form ────────────────────────────────────────────
 const manualForm = reactive({
   host: '',
-  port: 3131,
+  port: 3132,
   token: '',
   fingerprint: '',
   v: 1,
@@ -450,6 +450,23 @@ async function startScan() {
   await nextTick()
 
   try {
+    // Request camera permission on Android (if Capacitor available)
+    try {
+      const cap = (window as any).Capacitor
+      if (cap && cap.isNativePlatform?.()) {
+        // Attempt to request camera permission through Capacitor if available
+        const camera = cap.Plugins?.Camera
+        if (camera?.checkPermissions) {
+          const status = await camera.checkPermissions()
+          if (status.camera !== 'granted') {
+            await camera.requestPermissions()
+          }
+        }
+      }
+    } catch {
+      // Silently continue - browser will show native permission dialog
+    }
+
     mediaStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
       audio: false,
@@ -640,7 +657,7 @@ async function connectManual() {
   if (!manualFormValid.value) return
   const payload: PairingPayload = {
     host:        manualForm.host.trim(),
-    port:        manualForm.port || 3131,
+    port:        manualForm.port || 3132,
     token:       manualForm.token.trim(),
     fingerprint: manualForm.fingerprint.trim(),
     v:           manualForm.v || 1,
@@ -655,6 +672,8 @@ async function doPairing(payload: PairingPayload) {
   connectingLabel.value  = 'Establishing connection…'
   connectingHost.value   = `${payload.host}:${payload.port}`
 
+  orbLog(`[Pairing] Connecting to ${payload.host}:${payload.port}`)
+
   const deviceName = await getDeviceName()
   const deviceOs   = await getDeviceOs()
 
@@ -663,14 +682,24 @@ async function doPairing(payload: PairingPayload) {
     if (step.value === 'connecting') connectingLabel.value = 'Verifying token…'
   }, 1200)
 
-  const ok = await completePairing(payload, deviceName, deviceOs)
+  try {
+    const ok = await completePairing(payload, deviceName, deviceOs)
 
-  if (ok) {
-    pairedDaemonName.value = `orb-daemon @ ${payload.host}`
-    pairedHost.value       = `${payload.host}:${payload.port}`
-    step.value             = 'paired'
-  } else {
-    pairError.value = 'Pairing failed. Check that your token is valid (expires in 5 min) and the daemon is running.'
+    if (ok) {
+      orbLog(`[Pairing] ✓ Success: paired to ${payload.host}:${payload.port}`, 'info')
+      pairedDaemonName.value = `orb-daemon @ ${payload.host}`
+      pairedHost.value       = `${payload.host}:${payload.port}`
+      step.value             = 'paired'
+    } else {
+      const errMsg = 'Pairing failed. Check that your token is valid (expires in 5 min) and the daemon is running.'
+      orbLog(`[Pairing] ✗ Failed: ${errMsg}`, 'error')
+      pairError.value = errMsg
+      step.value      = 'idle'
+    }
+  } catch (error: any) {
+    const errMsg = error?.message || 'Unknown connection error'
+    orbLog(`[Pairing] ✗ Error: ${errMsg}`, 'error')
+    pairError.value = errMsg
     step.value      = 'idle'
   }
 }

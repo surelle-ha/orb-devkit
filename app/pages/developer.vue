@@ -136,6 +136,22 @@
       </button>
     </div>
 
+    <!-- ══ CONNECTION LOGS ══ -->
+    <div class="px-5 pb-2">
+      <h3 class="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Connection Events</h3>
+    </div>
+    <div class="mx-4 mb-4 rounded-2xl bg-zinc-950 border border-zinc-800 overflow-hidden">
+      <div class="max-h-48 overflow-y-auto p-3 space-y-1 font-mono text-[10px]" style="-webkit-overflow-scrolling:touch;">
+        <div v-if="connectionLogs.length === 0" class="text-zinc-600 py-3 text-center">No connection events yet</div>
+        <div v-for="(log, i) in connectionLogs" :key="i" class="flex items-start gap-2 leading-relaxed">
+          <span class="text-zinc-600 flex-shrink-0">{{ log.ts }}</span>
+          <span :class="['flex-shrink-0 font-bold w-8',
+            log.level==='error'?'text-rose-400':log.level==='warn'?'text-amber-400':'text-emerald-400']">{{ log.level[0].toUpperCase() }}</span>
+          <span class="text-zinc-300 break-all">{{ log.msg }}</span>
+        </div>
+      </div>
+    </div>
+
     <!-- ══ ACTIONS ══ -->
     <div class="px-5 pb-2">
       <h3 class="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-widest">Actions</h3>
@@ -335,6 +351,17 @@ function appendToPersistedLogs(newLogs: typeof appLogs.value) {
 watch(appLogs, (logs) => appendToPersistedLogs(logs), { deep: true })
 onMounted(() => { loadPersistedLogs(); appendToPersistedLogs(appLogs.value) })
 function clearLogs() { persistedLogs.value = []; appLogs.value.splice(0); savePersistedLogs() }
+
+// ── Connection logs filter ─────────────────────────────────
+const connectionLogs = computed(() => 
+  persistedLogs.value.filter(log => 
+    log.msg.includes('[Pairing]') || 
+    log.msg.includes('[Orb]') || 
+    log.msg.includes('daemon') ||
+    log.msg.includes('WebSocket') ||
+    log.msg.toLowerCase().includes('connect')
+  )
+)
 
 // ── Performance monitor ────────────────────────────────────
 const GRAPH_POINTS       = 60

@@ -96,6 +96,7 @@ export async function completePairing(
   error.value  = null
 
   try {
+    orbLog(`[Orb] Sending pairing request: ${deviceName} / ${deviceOs}`)
     await openSocket(payload.host, payload.port)
 
     const reply = await sendAndWait({
@@ -113,16 +114,21 @@ export async function completePairing(
       })
       status.value = 'connected'
       startPingLoop()
-      orbLog(`Paired with daemon: ${(reply.payload as any).daemon_name}`)
+      const daemonName = (reply.payload as any).daemon_name
+      orbLog(`[Orb] ✓ Paired with daemon: ${daemonName}`, 'info')
       return true
     } else {
-      error.value  = (reply.payload as any).message || 'Pairing rejected'
+      const errMsg = (reply.payload as any).message || 'Pairing rejected'
+      orbLog(`[Orb] ✗ Pairing rejected: ${errMsg}`, 'error')
+      error.value  = errMsg
       status.value = 'error'
       closeSocket()
       return false
     }
   } catch (e: any) {
-    error.value  = e.message || 'Connection failed'
+    const errMsg = e.message || 'Connection failed'
+    orbLog(`[Orb] ✗ Pairing error: ${errMsg}`, 'error')
+    error.value  = errMsg
     status.value = 'error'
     return false
   }
@@ -149,34 +155,34 @@ export async function connect(): Promise<void> {
 
 /**
  * Open a plain WebSocket to the daemon.
- * We use ws:// because the daemon's self-signed TLS cert is rejected
- * by mobile browsers (CertificateUnknown). Plain WS is fine for LAN use.
+ * We use ws:// on port 3132 (plain WebSocket, no TLS) because:
+ * 1. The daemon uses a self-signed cert → wss:// fails with CertificateUnknown
+ * 2. This is LAN-only (192.168.x.x / 127.0.0.1) — plain WS is safe
+ * 3. Port 3132 is the web/Capacitor endpoint, port 3131 is TLS for future native clients
  *
- * The daemon's ws_bridge.rs already handles both binary frames and the
- * 4-byte length-prefixed framing — we just connect to /ws on the same port.
+ * Note: Capacitor will block HTTPS→ws:// mixed content, but we configure
+ * allow_insecure_connect to permit WS to private IPs.
  */
 function openSocket(host: string, port: number): Promise<void> {
   return new Promise((resolve, reject) => {
     closeSocket(false) // close any existing socket without clearing reconnect
 
     status.value = 'connecting'
-    orbLog(`Connecting to daemon ws://${host}:${port}/ws`)
+    const url = `ws://${host}:3132/ws`
+    orbLog(`Connecting to daemon ${url}`)
 
-    // ws:// — plain WebSocket, no TLS. Required because:
-    // 1. The daemon uses a self-signed cert → wss:// fails with CertificateUnknown
-    // 2. This is a LAN-only connection (192.168.x.x / 127.0.0.1) — plain WS is safe
-    const socket = new WebSocket(`ws://${host}:${port}/ws`)
+    const socket = new WebSocket(url)
     socket.binaryType = 'arraybuffer'
 
     const timeout = setTimeout(() => {
       socket.close()
-      reject(new Error(`Connection timed out (ws://${host}:${port})`))
+      reject(new Error(`Connection timed out (${url})`))
     }, 8000)
 
     socket.onopen = () => {
       clearTimeout(timeout)
       ws = socket
-      orbLog(`WebSocket connected to ${host}:${port}`)
+      orbLog(`[Orb] ✓ WebSocket connected to ${host}:${port}`)
       resolve()
     }
 
@@ -187,7 +193,7 @@ function openSocket(host: string, port: number): Promise<void> {
       if (ws === socket) {
         ws = null
         if (status.value === 'connected') {
-          orbLog(`Daemon disconnected (code ${e.code})`)
+          orbLog(`[Orb] Daemon disconnected (code ${e.code}, reason: ${e.reason || 'unknown'})`)
           status.value = 'disconnected'
           stopPingLoop()
           scheduleReconnect()
@@ -195,11 +201,16 @@ function openSocket(host: string, port: number): Promise<void> {
       }
     }
 
-    socket.onerror = () => {
+    socket.onerror = (event) => {
       clearTimeout(timeout)
-      const msg = `Could not connect to ws://${host}:${port} — is the daemon running?`
+      const msg = `WebSocket error connecting to ws://${host}:3132 — daemon may be offline or network unreachable`
+      orbLog(`[Orb] ✗ ${msg}`, 'error')
       error.value = msg
-      if (status.value === 'connecting') reject(new Error(msg))
+      if (status.value === 'connecting') {
+        // Try to provide more specific error info
+        console.error('[Orb] Connection error:', event)
+        reject(new Error(msg))
+      }
     }
   })
 }
