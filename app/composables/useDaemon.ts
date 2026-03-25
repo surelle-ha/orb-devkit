@@ -1,8 +1,9 @@
 // composables/useDaemon.ts
-// Orb Daemon client — connects to the desktop daemon over TCP (via Capacitor socket)
-// Handles: discovery, pairing, keep-alive, data sync
+// Orb Daemon client — connects to the desktop daemon over WebSocket
+// Uses ws:// (plain) for LAN connections since the daemon uses a self-signed
+// cert that mobile browsers reject. LAN-only, so plain WS is acceptable.
 
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { orbLog } from './useStore'
 
 // ──────────────────────────────────────────────────────────
@@ -38,21 +39,20 @@ interface DaemonMessage {
 
 const DAEMON_KEY = 'orb_daemon_v1'
 
-const status = ref<DaemonStatus>('disconnected')
-const error = ref<string | null>(null)
+const status     = ref<DaemonStatus>('disconnected')
+const error      = ref<string | null>(null)
 const daemonInfo = ref<DaemonInfo | null>(loadDaemonInfo())
-const lastPong = ref<number | null>(null)
-const latencyMs = ref<number | null>(null)
+const latencyMs  = ref<number | null>(null)
 
-let socket: ReturnType<typeof useRawSocket> | null = null
-let pingInterval: ReturnType<typeof setInterval> | null = null
-let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let ws:             WebSocket | null = null
+let pingInterval:   ReturnType<typeof setInterval>  | null = null
+let reconnectTimer: ReturnType<typeof setTimeout>   | null = null
 let seqCounter = 0
 
-export const daemonStatus = status
-export const daemonError = error
+export const daemonStatus    = status
+export const daemonError     = error
 export const daemonConnected = computed(() => status.value === 'connected')
-export const daemonLatency = latencyMs
+export const daemonLatency   = latencyMs
 
 // ──────────────────────────────────────────────────────────
 // PERSISTENCE
@@ -68,7 +68,7 @@ function loadDaemonInfo(): DaemonInfo | null {
 function saveDaemonInfo(info: DaemonInfo | null) {
   try {
     if (info) localStorage.setItem(DAEMON_KEY, JSON.stringify(info))
-    else localStorage.removeItem(DAEMON_KEY)
+    else      localStorage.removeItem(DAEMON_KEY)
   } catch {}
   daemonInfo.value = info
 }
@@ -77,58 +77,52 @@ function saveDaemonInfo(info: DaemonInfo | null) {
 // QR PAIRING
 // ──────────────────────────────────────────────────────────
 
-/** Parse the orb-pair:// URI scanned from the QR code */
 export function parsePairingQR(raw: string): PairingPayload | null {
   try {
     const prefix = 'orb-pair://'
     if (!raw.startsWith(prefix)) return null
-    const b64 = raw.slice(prefix.length)
+    const b64  = raw.slice(prefix.length)
     const json = atob(b64)
     return JSON.parse(json) as PairingPayload
   } catch { return null }
 }
 
-/** Complete pairing after scanning QR */
 export async function completePairing(
   payload: PairingPayload,
   deviceName: string,
-  deviceOs: string
+  deviceOs: string,
 ): Promise<boolean> {
   status.value = 'pairing'
-  error.value = null
+  error.value  = null
 
   try {
-    await connectToHost(payload.host, payload.port)
+    await openSocket(payload.host, payload.port)
 
     const reply = await sendAndWait({
       type: 'Pair',
-      payload: {
-        token: payload.token,
-        device_name: deviceName,
-        device_os: deviceOs,
-      },
+      payload: { token: payload.token, device_name: deviceName, device_os: deviceOs },
     })
 
     if (reply.type === 'PairOk') {
       saveDaemonInfo({
-        host: payload.host,
-        port: payload.port,
+        host:        payload.host,
+        port:        payload.port,
         fingerprint: payload.fingerprint,
-        token: payload.token,
-        v: payload.v,
+        token:       payload.token,
+        v:           payload.v,
       })
       status.value = 'connected'
       startPingLoop()
       orbLog(`Paired with daemon: ${(reply.payload as any).daemon_name}`)
       return true
     } else {
-      error.value = (reply.payload as any).message || 'Pairing rejected'
+      error.value  = (reply.payload as any).message || 'Pairing rejected'
       status.value = 'error'
-      disconnect()
+      closeSocket()
       return false
     }
   } catch (e: any) {
-    error.value = e.message || 'Connection failed'
+    error.value  = e.message || 'Connection failed'
     status.value = 'error'
     return false
   }
@@ -140,40 +134,80 @@ export async function completePairing(
 
 export async function connect(): Promise<void> {
   const info = daemonInfo.value
-  if (!info) {
-    error.value = 'Not paired — scan QR code first'
-    return
+  if (!info) { error.value = 'Not paired — scan QR code first'; return }
+  if (status.value === 'connected' || status.value === 'connecting') return
+  try {
+    await openSocket(info.host, info.port)
+    status.value = 'connected'
+    startPingLoop()
+  } catch (e: any) {
+    error.value  = e.message
+    status.value = 'error'
+    scheduleReconnect()
   }
-  await connectToHost(info.host, info.port)
 }
 
-async function connectToHost(host: string, port: number): Promise<void> {
-  if (status.value === 'connected' || status.value === 'connecting') return
+/**
+ * Open a plain WebSocket to the daemon.
+ * We use ws:// because the daemon's self-signed TLS cert is rejected
+ * by mobile browsers (CertificateUnknown). Plain WS is fine for LAN use.
+ *
+ * The daemon's ws_bridge.rs already handles both binary frames and the
+ * 4-byte length-prefixed framing — we just connect to /ws on the same port.
+ */
+function openSocket(host: string, port: number): Promise<void> {
+  return new Promise((resolve, reject) => {
+    closeSocket(false) // close any existing socket without clearing reconnect
 
-  status.value = 'connecting'
-  orbLog(`Connecting to daemon ${host}:${port}`)
+    status.value = 'connecting'
+    orbLog(`Connecting to daemon ws://${host}:${port}/ws`)
 
-  socket = useRawSocket()
-  await socket.connect(host, port)
-  socket.onMessage(handleIncomingMessage)
-  socket.onClose(() => {
-    orbLog('Daemon connection closed')
-    status.value = 'disconnected'
-    stopPingLoop()
-    scheduleReconnect()
-  })
-  socket.onError((msg: string) => {
-    error.value = msg
-    status.value = 'error'
-    orbLog(`Daemon error: ${msg}`, 'error')
+    // ws:// — plain WebSocket, no TLS. Required because:
+    // 1. The daemon uses a self-signed cert → wss:// fails with CertificateUnknown
+    // 2. This is a LAN-only connection (192.168.x.x / 127.0.0.1) — plain WS is safe
+    const socket = new WebSocket(`ws://${host}:${port}/ws`)
+    socket.binaryType = 'arraybuffer'
+
+    const timeout = setTimeout(() => {
+      socket.close()
+      reject(new Error(`Connection timed out (ws://${host}:${port})`))
+    }, 8000)
+
+    socket.onopen = () => {
+      clearTimeout(timeout)
+      ws = socket
+      orbLog(`WebSocket connected to ${host}:${port}`)
+      resolve()
+    }
+
+    socket.onmessage = (e) => handleMessage(e.data)
+
+    socket.onclose = (e) => {
+      clearTimeout(timeout)
+      if (ws === socket) {
+        ws = null
+        if (status.value === 'connected') {
+          orbLog(`Daemon disconnected (code ${e.code})`)
+          status.value = 'disconnected'
+          stopPingLoop()
+          scheduleReconnect()
+        }
+      }
+    }
+
+    socket.onerror = () => {
+      clearTimeout(timeout)
+      const msg = `Could not connect to ws://${host}:${port} — is the daemon running?`
+      error.value = msg
+      if (status.value === 'connecting') reject(new Error(msg))
+    }
   })
 }
 
 export function disconnect(): void {
   stopPingLoop()
-  if (reconnectTimer) clearTimeout(reconnectTimer)
-  socket?.close()
-  socket = null
+  if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
+  closeSocket()
   status.value = 'disconnected'
 }
 
@@ -183,11 +217,21 @@ export function unpair(): void {
   orbLog('Unpaired from daemon')
 }
 
+function closeSocket(clearStatus = true) {
+  if (ws) {
+    try { ws.close() } catch {}
+    ws = null
+  }
+  if (clearStatus && status.value !== 'disconnected') {
+    status.value = 'disconnected'
+  }
+}
+
 function scheduleReconnect() {
   if (reconnectTimer) clearTimeout(reconnectTimer)
   reconnectTimer = setTimeout(async () => {
     if (daemonInfo.value && status.value === 'disconnected') {
-      orbLog('Reconnecting to daemon...')
+      orbLog('Reconnecting to daemon…')
       await connect()
     }
   }, 5000)
@@ -201,31 +245,27 @@ function startPingLoop() {
   stopPingLoop()
   pingInterval = setInterval(async () => {
     if (status.value !== 'connected') return
-    const seq = ++seqCounter
+    const seq  = ++seqCounter
     const sent = Date.now()
     try {
       const reply = await sendAndWait({ type: 'Ping', payload: { seq } }, 5000)
       if (reply.type === 'Pong') {
-        lastPong.value = Date.now()
         latencyMs.value = Date.now() - sent
       }
     } catch {
-      // Ping timed out
       latencyMs.value = null
     }
   }, 10_000)
 }
 
 function stopPingLoop() {
-  if (pingInterval) clearInterval(pingInterval)
-  pingInterval = null
+  if (pingInterval) { clearInterval(pingInterval); pingInterval = null }
 }
 
 // ──────────────────────────────────────────────────────────
 // DATA SYNC
 // ──────────────────────────────────────────────────────────
 
-/** Sync all ENV projects from the app store to the daemon */
 export async function syncEnvs(projects: EnvProject[]): Promise<void> {
   ensureConnected()
   for (const proj of projects) {
@@ -233,14 +273,9 @@ export async function syncEnvs(projects: EnvProject[]): Promise<void> {
       await sendAndWait({
         type: 'SyncEnv',
         payload: {
-          project: proj.name,
+          project:     proj.name,
           environment: inst.name,
-          vars: inst.vars.map((v) => ({
-            key: v.key,
-            value: v.value,
-            type: v.type,
-            secret: v.secret,
-          })),
+          vars:        inst.vars.map(v => ({ key: v.key, value: v.value, type: v.type, secret: v.secret })),
         },
       })
       orbLog(`Daemon: synced ${proj.name}/${inst.name} (${inst.vars.length} vars)`)
@@ -248,104 +283,92 @@ export async function syncEnvs(projects: EnvProject[]): Promise<void> {
   }
 }
 
-/** Sync a single ENV project/environment */
 export async function syncSingleEnv(
   project: string,
   environment: string,
-  vars: EnvVarLike[]
+  vars: EnvVarLike[],
 ): Promise<void> {
   ensureConnected()
-  await sendAndWait({
-    type: 'SyncEnv',
-    payload: { project, environment, vars },
-  })
+  await sendAndWait({ type: 'SyncEnv', payload: { project, environment, vars } })
   orbLog(`Daemon: synced ${project}/${environment}`)
 }
 
-/** Sync the AI platform blocklist */
 export async function syncBlocklist(platforms: BlockedPlatformLike[]): Promise<void> {
   ensureConnected()
-  await sendAndWait({
-    type: 'SyncBlocklist',
-    payload: { platforms },
-  })
-  orbLog(`Daemon: blocklist synced (${platforms.filter((p) => p.enabled).length} active)`)
+  await sendAndWait({ type: 'SyncBlocklist', payload: { platforms } })
+  orbLog(`Daemon: blocklist synced (${platforms.filter(p => p.enabled).length} active)`)
 }
 
-/** Sync vault entries (passwords stay encrypted client-side) */
 export async function syncVault(entries: VaultEntryLike[]): Promise<void> {
   ensureConnected()
-  await sendAndWait({
-    type: 'SyncVault',
-    payload: { entries },
-  })
+  await sendAndWait({ type: 'SyncVault', payload: { entries } })
   orbLog(`Daemon: vault synced (${entries.length} entries)`)
 }
 
-/** Trigger a hot-reload on the desktop side */
 export async function triggerReload(target: string): Promise<void> {
   ensureConnected()
-  await sendAndWait({
-    type: 'TriggerReload',
-    payload: { target },
-  })
+  await sendAndWait({ type: 'TriggerReload', payload: { target } })
 }
 
 // ──────────────────────────────────────────────────────────
 // LOW-LEVEL MESSAGING
 // ──────────────────────────────────────────────────────────
 
-const pendingReplies = new Map<
-  number,
-  { resolve: (msg: DaemonMessage) => void; reject: (e: Error) => void }
->()
+const pendingReplies = new Map<number, {
+  resolve: (msg: DaemonMessage) => void
+  reject:  (e: Error) => void
+}>()
 
-function handleIncomingMessage(data: ArrayBuffer) {
+function handleMessage(data: ArrayBuffer | string) {
   try {
-    // Strip 4-byte length prefix
-    const view = new DataView(data)
-    const len = view.getUint32(0, false) // big-endian
-    const json = new TextDecoder().decode(new Uint8Array(data, 4, len))
+    let json: string
+    if (typeof data === 'string') {
+      json = data
+    } else {
+      // Strip optional 4-byte length prefix
+      const view = new DataView(data)
+      const declaredLen = view.getUint32(0, false)
+      if (declaredLen + 4 === data.byteLength) {
+        json = new TextDecoder().decode(new Uint8Array(data, 4, declaredLen))
+      } else {
+        json = new TextDecoder().decode(data)
+      }
+    }
+
     const msg = JSON.parse(json) as DaemonMessage
 
-    // Resolve pending if this is a reply
-    const pending = pendingReplies.values().next().value
-    if (pending) {
-      const [key] = pendingReplies.entries().next().value
-      pendingReplies.delete(key)
-      pending.resolve(msg)
-    }
+    // Mark as connected on any valid message
+    if (status.value !== 'connected') status.value = 'connected'
 
-    // Update connected status on any message
-    if (status.value !== 'connected') {
-      status.value = 'connected'
+    // Resolve the oldest pending reply
+    const entry = pendingReplies.entries().next().value
+    if (entry) {
+      const [key, { resolve }] = entry
+      pendingReplies.delete(key)
+      resolve(msg)
     }
   } catch (e: any) {
-    orbLog(`Daemon message parse error: ${e.message}`, 'error')
+    orbLog(`Daemon parse error: ${e.message}`, 'error')
   }
 }
 
 function sendAndWait(
   msg: { type: string; payload: Record<string, unknown> },
-  timeoutMs = 10_000
+  timeoutMs = 10_000,
 ): Promise<DaemonMessage> {
   return new Promise((resolve, reject) => {
-    if (!socket || status.value === 'disconnected') {
-      reject(new Error('Not connected to daemon'))
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      reject(new Error('WebSocket not open'))
       return
     }
 
-    const seq = ++seqCounter
-    pendingReplies.set(seq, { resolve, reject })
-
+    const seq  = ++seqCounter
     const json = JSON.stringify({ type: msg.type, payload: msg.payload })
-    const encoded = new TextEncoder().encode(json)
-    const frame = new ArrayBuffer(4 + encoded.byteLength)
-    const view = new DataView(frame)
-    view.setUint32(0, encoded.byteLength, false)
-    new Uint8Array(frame, 4).set(encoded)
 
-    socket!.send(frame)
+    // Send as plain JSON text — the daemon's ws_bridge handles both text and binary
+    ws.send(json)
+
+    pendingReplies.set(seq, { resolve, reject })
 
     setTimeout(() => {
       if (pendingReplies.has(seq)) {
@@ -357,107 +380,20 @@ function sendAndWait(
 }
 
 function ensureConnected() {
-  if (status.value !== 'connected') {
-    throw new Error('Not connected to daemon')
-  }
+  if (status.value !== 'connected') throw new Error('Not connected to daemon')
 }
 
 // ──────────────────────────────────────────────────────────
-// RAW SOCKET (Capacitor-compatible)
+// TYPE HELPERS
 // ──────────────────────────────────────────────────────────
 
-function useRawSocket() {
-  let ws: WebSocket | null = null
-  let messageHandler: ((data: ArrayBuffer) => void) | null = null
-  let closeHandler: (() => void) | null = null
-  let errorHandler: ((msg: string) => void) | null = null
-
-  // NOTE: In production with Capacitor, use @capacitor-community/tcp-socket
-  // or a custom plugin. Here we use WebSocket as the web-compatible fallback.
-  // The daemon should also expose a WebSocket endpoint (ws://host:3131/ws)
-  // for browser/web compatibility alongside the raw TCP+TLS port.
-
-  return {
-    connect(host: string, port: number): Promise<void> {
-      return new Promise((resolve, reject) => {
-        try {
-          // Try WebSocket first (web/Capacitor web)
-          ws = new WebSocket(`wss://${host}:${port}/ws`)
-          ws.binaryType = 'arraybuffer'
-
-          ws.onopen = () => resolve()
-          ws.onmessage = (e) => messageHandler?.(e.data)
-          ws.onclose = () => closeHandler?.()
-          ws.onerror = (e) => {
-            errorHandler?.('WebSocket error')
-            reject(new Error('WebSocket connection failed'))
-          }
-        } catch (e: any) {
-          reject(e)
-        }
-      })
-    },
-
-    send(data: ArrayBuffer) {
-      ws?.send(data)
-    },
-
-    close() {
-      ws?.close()
-      ws = null
-    },
-
-    onMessage(cb: (data: ArrayBuffer) => void) {
-      messageHandler = cb
-    },
-
-    onClose(cb: () => void) {
-      closeHandler = cb
-    },
-
-    onError(cb: (msg: string) => void) {
-      errorHandler = cb
-    },
-  }
-}
-
-// ──────────────────────────────────────────────────────────
-// TYPE HELPERS (mirror app store types)
-// ──────────────────────────────────────────────────────────
-
-interface EnvVarLike {
-  key: string
-  value: string
-  type: string
-  secret: boolean
-}
-
-interface EnvInstanceLike {
-  name: string
-  type: string
-  vars: EnvVarLike[]
-}
-
-interface EnvProject {
-  name: string
-  instances: EnvInstanceLike[]
-}
-
-interface BlockedPlatformLike {
-  id: string
-  name: string
-  domains: string[]
-  enabled: boolean
-}
-
-interface VaultEntryLike {
-  id: number
-  service: string
-  username: string
-  password: string
-  category: string
-  url: string
-  notes: string
+interface EnvVarLike      { key: string; value: string; type: string; secret: boolean }
+interface EnvInstanceLike { name: string; type: string; vars: EnvVarLike[] }
+interface EnvProject      { name: string; instances: EnvInstanceLike[] }
+interface BlockedPlatformLike { id: string; name: string; domains: string[]; enabled: boolean }
+interface VaultEntryLike  {
+  id: number; service: string; username: string; password: string
+  category: string; url: string; notes: string
 }
 
 // ──────────────────────────────────────────────────────────
@@ -466,10 +402,10 @@ interface VaultEntryLike {
 
 export function useDaemon() {
   return {
-    status: daemonStatus,
-    connected: daemonConnected,
-    error: daemonError,
-    latency: daemonLatency,
+    status:     daemonStatus,
+    connected:  daemonConnected,
+    error:      daemonError,
+    latency:    daemonLatency,
     daemonInfo,
     connect,
     disconnect,

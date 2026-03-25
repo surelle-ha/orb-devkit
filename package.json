@@ -26,6 +26,7 @@
     "@nuxtjs/ionic": "1.0.2",
     "@nuxtjs/tailwindcss": "6.14.0",
     "@zxing/library": "^0.21.3",
+    "jsqr": "^1.4.0",
     "lucide-vue-next": "^0.577.0",
     "nuxt": "^4.4.2",
     "vue": "^3.5.30",
