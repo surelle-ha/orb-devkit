@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'xyz.surelle.vorb',
-  appName: 'vOrb',
+  appId: 'xyz.surelle.orb-devkit',
+  appName: 'Orb DevKit',
   webDir: 'dist',
 
   // Disable the native Capacitor splash so our Vue SplashScreen shows first

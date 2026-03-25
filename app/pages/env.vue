@@ -573,8 +573,22 @@ import {
 } from 'lucide-vue-next'
 import { settings, orbLog } from '../composables/useStore'
 import { tcpConnected } from '../composables/useTcp'
+import { useDaemon, syncSingleEnv } from '~/composables/useDaemon'
+import DaemonStatusPill from '~/components/DaemonStatusPill.vue'
+import { useNav } from '../composables/useNav'
 
 const accent = computed(() => settings.value.accentColor)
+const { navigate } = useNav()
+const { connected: daemonConnected } = useDaemon()
+
+async function daemonSyncAll() {
+  if (!daemonConnected.value) return
+  for (const proj of projects.value) {
+    for (const inst of proj.instances) {
+      await syncSingleEnv(proj.name, inst.name, inst.vars).catch(() => {})
+    }
+  }
+}
 
 // ══════════════════════════════════════════════════════════
 // DATA STRUCTURES

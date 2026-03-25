@@ -23,6 +23,8 @@ import { initIdleLock } from '~/composables/useIdleLock'
 import { settings }   from '~/composables/useStore'
 import { pinEnabled, lockWithPin } from '~/composables/usePin'
 import { initDatabase } from '~/utils/initDatabase'
+import { useDaemon } from '~/composables/useDaemon'
+import { App as CapApp } from '@capacitor/app'
 
 type Phase = 'splash' | 'app'
 const phase      = ref<Phase>('splash')
@@ -86,6 +88,16 @@ onMounted(async () => {
     await SplashScreen.hide()
   } catch {}
   initDatabase().catch(e => console.warn('[Orb] DB init:', e))
+
+  // Reconnect to daemon when app comes to foreground
+  const { connect: daemonConnect, daemonInfo } = useDaemon()
+  CapApp.addListener('appStateChange', ({ isActive }) => {
+    if (isActive && daemonInfo.value) {
+      daemonConnect().catch(() => {})
+    }
+  })
+  // Initial connect attempt
+  if (daemonInfo.value) daemonConnect().catch(() => {})
 })
 
 async function onSplashDone() {

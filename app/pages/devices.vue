@@ -84,6 +84,12 @@
             Install the Orb daemon on your desktop<br>and connect it to 127.0.0.1:{{ tcpPort }}
           </p>
         </div>
+        <button @click.stop="showPairing = true"
+          class="flex items-center gap-2 px-5 py-3 rounded-2xl text-[13px] font-black font-mono active:scale-95 transition-all"
+          :style="{ background: accent + '18', border: `1px solid ${accent}33`, color: accent }">
+          <QrCode :size="16" :stroke-width="2" />
+          pair_desktop
+        </button>
       </div>
 
       <!-- Device list when available -->
@@ -372,12 +378,23 @@
 
     <div class="h-4"></div>
   </div>
+
+  <!-- Pair daemon modal -->
+  <Teleport to="body">
+    <Transition name="sheet">
+      <div v-if="showPairing"
+        class="fixed inset-0 z-[300] overflow-y-auto"
+        style="background:#060810;">
+        <PairDaemon @close="showPairing = false" />
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue'
 import {
-  Monitor, MonitorOff, Zap, ChevronLeft, Trash2,
+  Monitor, MonitorOff, Zap, ChevronLeft, Trash2, QrCode,
   Cpu, MemoryStick, Layers, Thermometer, ArrowDown, ArrowUp,
   Activity, HardDrive, FlaskConical, Server, Globe, Shield,
 } from 'lucide-vue-next'
@@ -386,9 +403,11 @@ import { tcpConnected, tcpPort } from '../composables/useTcp'
 import { devMode, toggleDevMode } from '../composables/useDevMode'
 import { devices, onlineDevices, removeDevice, type Device } from '../composables/useDevices'
 import { useNav } from '../composables/useNav'
+import PairDaemon from '~/components/PairDaemon.vue'
 
 const accent = computed(() => settings.value.accentColor)
 const { navParams } = useNav()
+const showPairing = ref(false)
 
 // ── Device selection ────────────────────────────────────────
 const viewingDeviceId = ref<string | null>(navParams.value.deviceId ?? null)

@@ -69,32 +69,33 @@ export function selectDevice(id: string) {
 }
 
 // When TCP connects → mark/add the demo device as online
-watch(tcpConnected, (connected) => {
-  if (connected) {
-    const existing = devices.value.find(d => d.id === DEMO_DEVICES[0].id)
-    const now = new Date().toISOString()
-    if (existing) {
-      existing.online   = true
-      existing.lastSeen = now
-      existing.port     = tcpPort.value
-    } else {
-      devices.value.push({
-        ...DEMO_DEVICES[0],
-        port:     tcpPort.value,
-        lastSeen: now,
-        online:   true,
-      })
-    }
-    activeDeviceId.value = DEMO_DEVICES[0].id
-    saveDevices(devices.value)
-    orbLog(`Device online: ${DEMO_DEVICES[0].name}`)
-  } else {
-    // Mark all offline
-    devices.value.forEach(d => { d.online = false })
-    saveDevices(devices.value)
-    orbLog('All devices offline')
-  }
-}, { immediate: true })
+// DISABLED: Auto-add of mock data removed to allow manual pairing
+// watch(tcpConnected, (connected) => {
+//   if (connected) {
+//     const existing = devices.value.find(d => d.id === DEMO_DEVICES[0].id)
+//     const now = new Date().toISOString()
+//     if (existing) {
+//       existing.online   = true
+//       existing.lastSeen = now
+//       existing.port     = tcpPort.value
+//     } else {
+//       devices.value.push({
+//         ...DEMO_DEVICES[0],
+//         port:     tcpPort.value,
+//         lastSeen: now,
+//         online:   true,
+//       })
+//     }
+//     activeDeviceId.value = DEMO_DEVICES[0].id
+//     saveDevices(devices.value)
+//     orbLog(`Device online: ${DEMO_DEVICES[0].name}`)
+//   } else {
+//     // Mark all offline
+//     devices.value.forEach(d => { d.online = false })
+//     saveDevices(devices.value)
+//     orbLog('All devices offline')
+//   }
+// }, { immediate: true })
 
 export function removeDevice(id: string) {
   devices.value = devices.value.filter(d => d.id !== id)

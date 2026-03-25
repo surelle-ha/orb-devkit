@@ -166,6 +166,13 @@
       </div>
     </template>
 
+    <DaemonStatusPill
+      :visible="vaultUnlocked"
+      :show-sync="true"
+      :on-sync="daemonSyncVault"
+      @open-pair="navigate('devices')"
+    />
+
     <div class="h-4"></div>
   </div>
 
@@ -297,9 +304,27 @@ import {
 } from 'lucide-vue-next'
 import { settings, orbLog } from '../composables/useStore'
 import { useNav } from '../composables/useNav'
+import { useDaemon } from '~/composables/useDaemon'
+import DaemonStatusPill from '~/components/DaemonStatusPill.vue'
 
 const { navigate } = useNav()
 const accent = computed(() => settings.value.accentColor)
+const { connected: daemonConnected, syncVault } = useDaemon()
+
+async function daemonSyncVault() {
+  if (!daemonConnected.value || !vaultUnlocked.value) return
+  await syncVault(
+    entries.value.map(e => ({
+      id: e.id,
+      service: e.service,
+      username: e.username,
+      password: e.password,
+      category: e.category,
+      url: e.url,
+      notes: e.notes,
+    }))
+  ).catch(() => {})
+}
 
 // ── Vault lock state ──────────────────────────────────────
 const VAULT_KEY        = 'orb_vault_entries_v1'
@@ -462,6 +487,7 @@ function saveEntry() {
     orbLog(`Vault entry added: ${form.service}`)
   }
   saveEntries()
+  daemonSyncVault()
   closeSheet()
   showToast(editTarget.value ? 'entry_updated' : 'entry_added')
 }
@@ -470,6 +496,7 @@ function deleteEntry(id: number) {
   const e = entries.value.find(e => e.id === id)
   entries.value = entries.value.filter(e => e.id !== id)
   saveEntries()
+  daemonSyncVault()
   closeSheet()
   showToast(`deleted: ${e?.service}`)
   orbLog(`Vault entry deleted: ${e?.service}`)

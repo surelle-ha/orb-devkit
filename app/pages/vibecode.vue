@@ -163,6 +163,13 @@
       </div>
     </div>
 
+    <DaemonStatusPill
+      :visible="true"
+      :show-sync="true"
+      :on-sync="daemonSyncBlocklist"
+      @open-pair="navigate('devices')"
+    />
+
     <div class="h-4"></div>
   </div>
 </template>
@@ -174,9 +181,17 @@ import {
 } from 'lucide-vue-next'
 import { settings, orbLog } from '../composables/useStore'
 import { useNav } from '../composables/useNav'
+import { useDaemon } from '~/composables/useDaemon'
+import DaemonStatusPill from '~/components/DaemonStatusPill.vue'
 
 const { navigate } = useNav()
 const accent = computed(() => settings.value.accentColor)
+const { connected: daemonConnected, syncBlocklist } = useDaemon()
+
+async function daemonSyncBlocklist() {
+  if (!daemonConnected.value) return
+  await syncBlocklist(platforms.value).catch(() => {})
+}
 
 // ── Platforms ─────────────────────────────────────────────
 const PLATFORMS_KEY = 'orb_vibecode_platforms_v1'
@@ -217,6 +232,7 @@ const blockedCount  = computed(() => enabledBlocks.value.length)
 function togglePlatform(id: string) {
   const p = platforms.value.find(p => p.id === id)
   if (p) { p.enabled = !p.enabled; savePlatforms() }
+  daemonSyncBlocklist()
 }
 
 // ── Session timer ─────────────────────────────────────────
@@ -247,6 +263,7 @@ function startSession() {
   secondsLeft.value = selectedDuration.value * 60
   sessionActive.value = true
   orbLog(`Vibecode session started: ${selectedDuration.value}min`)
+  daemonSyncBlocklist()
   timerInterval = setInterval(() => {
     if (secondsLeft.value <= 0) {
       completeSession()
