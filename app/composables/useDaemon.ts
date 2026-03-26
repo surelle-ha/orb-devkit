@@ -105,7 +105,6 @@ export async function completePairing(
   deviceName: string,
   deviceOs:   string,
 ): Promise<boolean> {
-  // Pairing is always allowed (it's what establishes the connection)
   status.value = 'pairing'
   error.value  = null
 
@@ -135,7 +134,6 @@ export async function completePairing(
       saveDaemonInfo(info)
       registerDaemonAsDevice(info)
 
-      // Auto-enable dev mode on successful pairing
       try {
         localStorage.setItem('orb_dev_mode_v1', 'true')
       } catch {}
@@ -247,7 +245,6 @@ export async function connect(): Promise<void> {
   const info = daemonInfo.value
   if (!info) { error.value = 'Not paired — scan QR code first'; return }
 
-  // GATE: only connect if dev mode is on
   if (!isDevModeOn()) {
     orbLog('[Orb] Connection blocked — dev mode is off', 'warn')
     return
@@ -326,7 +323,6 @@ function openSocket(host: string, port: number): Promise<void> {
         latencyMs.value = null
         stopPingLoop()
         markDaemonDeviceOffline()
-        // Only schedule reconnect if dev mode is still on
         if (isDevModeOn()) scheduleReconnect()
       }
     }
@@ -361,6 +357,27 @@ export function unpair(): void {
   disconnect()
   saveDaemonInfo(null)
   orbLog('Unpaired from daemon')
+}
+
+/**
+ * resetDaemon — sends Reset command to daemon then clears local pairing state.
+ * The daemon will wipe its store and return ResetOk, after which we disconnect.
+ */
+export async function resetDaemon(): Promise<void> {
+  if (isSocketAlive()) {
+    try {
+      orbLog('[Orb] Sending Reset to daemon…')
+      const reply = await sendAndWait({ type: 'Reset', payload: {} }, 8000)
+      if (reply.type === 'ResetOk') {
+        orbLog('[Orb] Daemon reset confirmed', 'info')
+      } else {
+        orbLog(`[Orb] Daemon reset response: ${reply.type}`, 'warn')
+      }
+    } catch (e: any) {
+      orbLog(`[Orb] Reset send failed: ${e.message}`, 'warn')
+    }
+  }
+  unpair()
 }
 
 function closeSocket() {
@@ -456,12 +473,11 @@ export async function syncBlocklist(platforms: BlockedPlatformLike[]): Promise<v
 
 export async function syncVault(entries: VaultEntryLike[]): Promise<void> {
   if (!isSocketAlive()) throw new Error('Not connected to daemon')
-  // Map to daemon's expected format
   const mapped = entries.map(e => ({
     id:                 e.id,
     service:            e.service,
     username:           e.username,
-    encrypted_password: e.password, // daemon stores as-is, encryption is on-device
+    encrypted_password: e.password,
     category:           e.category,
     url:                e.url,
     notes:              e.notes,
@@ -582,6 +598,7 @@ export function useDaemon() {
     connect,
     disconnect,
     unpair,
+    resetDaemon,
     completePairing,
     parsePairingQR,
     syncEnvs,

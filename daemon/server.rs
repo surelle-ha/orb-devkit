@@ -579,6 +579,18 @@ pub async fn dispatch_message(msg: &AppMessage, store: &Arc<Mutex<Store>>) -> Da
             info!("Sync requested: {}", resource);
             DaemonMessage::Ok { for_type: "RequestSync".into() }
         }
+        // NEW: Handle Reset — wipes store and signals client to unpair
+        AppMessage::Reset => {
+            warn!("Reset requested by mobile client — wiping daemon data");
+            if let Err(e) = crate::store::Store::reset() {
+                return DaemonMessage::Error { code: "RESET_ERROR".into(), message: e.to_string() };
+            }
+            // Also clear in-memory store
+            let mut st = store.lock().await;
+            *st = crate::store::Store::default();
+            info!("Daemon data reset complete");
+            DaemonMessage::ResetOk
+        }
         AppMessage::Ping { seq } => DaemonMessage::Pong { seq: *seq, ts: chrono::Utc::now().timestamp_millis() },
         AppMessage::Pair { .. } => DaemonMessage::Error { code: "ALREADY_PAIRED".into(), message: "Already paired.".into() },
     }

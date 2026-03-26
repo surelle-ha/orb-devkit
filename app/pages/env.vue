@@ -16,7 +16,8 @@
         <!-- TCP sync badge -->
         <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
           :style="{ background: tcpConnected ? '#10b98118' : '#ef444418', border: `1px solid ${tcpConnected ? '#10b98133' : '#ef444433'}` }">
-          <div :class="['w-1.5 h-1.5 rounded-full', tcpConnected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500']"></div>
+          <div :class="['w-1.5 h-1.5 rounded-full', tcpConnected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500']">
+          </div>
           <span class="text-[10px] font-mono font-bold" :style="{ color: tcpConnected ? '#34d399' : '#f87171' }">
             {{ tcpConnected ? 'SYNCED' : 'OFFLINE' }}
           </span>
@@ -32,11 +33,13 @@
 
     <!-- ══ BREADCRUMB ══ -->
     <div v-if="activeProject" class="flex items-center gap-1.5 px-5 mb-3">
-      <button @click="goHome" class="text-[11px] font-mono font-bold text-zinc-600 active:text-zinc-400 transition-colors">
+      <button @click="goHome"
+        class="text-[11px] font-mono font-bold text-zinc-600 active:text-zinc-400 transition-colors">
         .env
       </button>
       <ChevronRight :size="11" class="text-zinc-700" :stroke-width="2" />
-      <button @click="goToProject" :class="['text-[11px] font-mono font-bold transition-colors', !activeInstance ? 'text-zinc-300' : 'text-zinc-600 active:text-zinc-400']">
+      <button @click="goToProject"
+        :class="['text-[11px] font-mono font-bold transition-colors', !activeInstance ? 'text-zinc-300' : 'text-zinc-600 active:text-zinc-400']">
         {{ activeProject.name }}
       </button>
       <template v-if="activeInstance">
@@ -68,8 +71,7 @@
 
       <!-- Project cards -->
       <div class="flex flex-col gap-2.5 px-4">
-        <button v-for="proj in projects" :key="proj.id"
-          @click="activeProjectId = proj.id"
+        <button v-for="proj in projects" :key="proj.id" @click="activeProjectId = proj.id"
           class="rounded-2xl overflow-hidden active:scale-[0.99] transition-all text-left"
           style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);">
           <div class="flex items-center gap-3 px-4 py-4">
@@ -80,7 +82,8 @@
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-[15px] font-black font-mono text-zinc-100">{{ proj.name }}</p>
-              <p class="text-[11px] font-mono text-zinc-500 mt-0.5 truncate">{{ proj.description || 'No description' }}</p>
+              <p class="text-[11px] font-mono text-zinc-500 mt-0.5 truncate">{{ proj.description || 'No description' }}
+              </p>
             </div>
             <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
               <!-- Instance chips -->
@@ -114,8 +117,10 @@
             {{ activeProject.icon }}
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-[14px] font-black font-mono" :style="{ color: activeProject.color }">{{ activeProject.name }}</p>
-            <p class="text-[11px] font-mono text-zinc-500 mt-0.5 truncate">{{ activeProject.description || 'No description' }}</p>
+            <p class="text-[14px] font-black font-mono" :style="{ color: activeProject.color }">{{ activeProject.name }}
+            </p>
+            <p class="text-[11px] font-mono text-zinc-500 mt-0.5 truncate">{{ activeProject.description || 'No
+              description' }}</p>
           </div>
           <div class="flex items-center gap-1.5">
             <button @click="editProject(activeProject)"
@@ -136,8 +141,7 @@
       <div class="flex items-center justify-between px-5 pb-2">
         <p class="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">environments</p>
         <button @click="showInstanceSheet = true; instanceForm.projectId = activeProject.id"
-          class="text-[10px] font-mono font-bold flex items-center gap-1 active:opacity-60"
-          :style="{ color: accent }">
+          class="text-[10px] font-mono font-bold flex items-center gap-1 active:opacity-60" :style="{ color: accent }">
           <Plus :size="11" :stroke-width="2.5" /> add
         </button>
       </div>
@@ -156,16 +160,15 @@
 
       <!-- Instance cards -->
       <div class="flex flex-col gap-2.5 px-4">
-        <button v-for="inst in activeProject.instances" :key="inst.id"
-          @click="activeInstanceId = inst.id"
+        <button v-for="inst in activeProject.instances" :key="inst.id" @click="activeInstanceId = inst.id"
           class="rounded-2xl overflow-hidden active:scale-[0.99] transition-all text-left"
           style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);">
           <div class="flex items-center gap-3 px-4 py-4">
             <!-- Type badge -->
             <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
               :style="{ background: instanceColor(inst.type) + '14', border: `1px solid ${instanceColor(inst.type)}28` }">
-              <component :is="instanceIcon(inst.type)" :size="20"
-                :style="{ color: instanceColor(inst.type) }" :stroke-width="1.8" />
+              <component :is="instanceIcon(inst.type)" :size="20" :style="{ color: instanceColor(inst.type) }"
+                :stroke-width="1.8" />
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
@@ -231,8 +234,7 @@
         </div>
         <!-- Type filter chips -->
         <div class="flex gap-1.5 overflow-x-auto scrollbar-hide">
-          <button v-for="t in ['all', ...varTypes.map(v => v.value)]" :key="t"
-            @click="varTypeFilter = t"
+          <button v-for="t in ['all', ...varTypes.map(v => v.value)]" :key="t" @click="varTypeFilter = t"
             class="flex-shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-mono font-bold transition-all"
             :style="varTypeFilter === t
               ? { background: accent + '20', border: `1px solid ${accent}44`, color: accent }
@@ -257,9 +259,8 @@
       <!-- Vars list -->
       <div v-else class="mx-4 rounded-2xl overflow-hidden"
         style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);">
-        <div v-for="(v, i) in filteredVars" :key="v.id"
-          :class="['flex items-center gap-3 px-4 py-3 transition-colors active:bg-white/5',
-            i < filteredVars.length - 1 ? 'border-b border-white/5' : '']">
+        <div v-for="(v, i) in filteredVars" :key="v.id" :class="['flex items-center gap-3 px-4 py-3 transition-colors active:bg-white/5',
+          i < filteredVars.length - 1 ? 'border-b border-white/5' : '']">
           <!-- Type icon -->
           <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center"
             :style="{ background: accent + '12', border: `1px solid ${accent}20` }">
@@ -319,13 +320,11 @@
   <!-- ══ PROJECT SHEET ══ -->
   <Teleport to="body">
     <Transition name="sheet">
-      <div v-if="showProjectSheet"
-        class="fixed inset-0 z-[200] flex items-end justify-center"
-        style="background:rgba(0,0,0,0.7);backdrop-filter:blur(14px)"
-        @click.self="closeProjectSheet">
+      <div v-if="showProjectSheet" class="fixed inset-0 z-[200] flex items-end justify-center"
+        style="background:rgba(0,0,0,0.7);backdrop-filter:blur(14px)" @click.self="closeProjectSheet">
         <div class="w-full max-w-[430px] rounded-t-[28px] border-t overflow-hidden"
           style="background:#0c0c18;border-color:rgba(255,255,255,0.08);"
-          :style="{ paddingBottom:'calc(32px + env(safe-area-inset-bottom))' }">
+          :style="{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))' }">
           <div class="flex flex-col gap-3 px-5 pt-4">
             <div class="w-10 h-1 rounded-full self-center mb-1" style="background:rgba(255,255,255,0.08)"></div>
             <p class="text-[16px] font-black font-mono text-center text-zinc-100">
@@ -359,7 +358,8 @@
 
             <!-- Name -->
             <div>
-              <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">PROJECT NAME</p>
+              <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">PROJECT NAME
+              </p>
               <input v-model="projectForm.name" placeholder="my-app"
                 class="w-full rounded-xl px-4 py-3 text-[14px] font-mono font-bold text-zinc-100 placeholder:text-zinc-700 outline-none"
                 style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);" />
@@ -367,7 +367,8 @@
 
             <!-- Description -->
             <div>
-              <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">DESCRIPTION (optional)</p>
+              <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">DESCRIPTION
+                (optional)</p>
               <input v-model="projectForm.description" placeholder="Short description…"
                 class="w-full rounded-xl px-4 py-3 text-[13px] font-mono text-zinc-100 placeholder:text-zinc-700 outline-none"
                 style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);" />
@@ -396,13 +397,11 @@
   <!-- ══ INSTANCE SHEET ══ -->
   <Teleport to="body">
     <Transition name="sheet">
-      <div v-if="showInstanceSheet"
-        class="fixed inset-0 z-[200] flex items-end justify-center"
-        style="background:rgba(0,0,0,0.7);backdrop-filter:blur(14px)"
-        @click.self="closeInstanceSheet">
+      <div v-if="showInstanceSheet" class="fixed inset-0 z-[200] flex items-end justify-center"
+        style="background:rgba(0,0,0,0.7);backdrop-filter:blur(14px)" @click.self="closeInstanceSheet">
         <div class="w-full max-w-[430px] rounded-t-[28px] border-t overflow-hidden"
           style="background:#0c0c18;border-color:rgba(255,255,255,0.08);"
-          :style="{ paddingBottom:'calc(32px + env(safe-area-inset-bottom))' }">
+          :style="{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))' }">
           <div class="flex flex-col gap-3 px-5 pt-4">
             <div class="w-10 h-1 rounded-full self-center mb-1" style="background:rgba(255,255,255,0.08)"></div>
             <p class="text-[16px] font-black font-mono text-center text-zinc-100">
@@ -411,11 +410,12 @@
 
             <!-- Type selector -->
             <div>
-              <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-2 px-1">ENVIRONMENT TYPE</p>
+              <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-2 px-1">ENVIRONMENT
+                TYPE
+              </p>
               <div class="grid grid-cols-3 gap-2">
                 <button v-for="t in instanceTypes" :key="t.value" @click="instanceForm.type = t.value"
-                  class="flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all active:scale-95"
-                  :style="instanceForm.type === t.value
+                  class="flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all active:scale-95" :style="instanceForm.type === t.value
                     ? { background: instanceColor(t.value) + '18', border: `1px solid ${instanceColor(t.value)}44` }
                     : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }">
                   <component :is="instanceIcon(t.value)" :size="18"
@@ -460,13 +460,11 @@
   <!-- ══ VAR SHEET ══ -->
   <Teleport to="body">
     <Transition name="sheet">
-      <div v-if="showVarSheet"
-        class="fixed inset-0 z-[200] flex items-end justify-center"
-        style="background:rgba(0,0,0,0.7);backdrop-filter:blur(14px)"
-        @click.self="closeVarSheet">
+      <div v-if="showVarSheet" class="fixed inset-0 z-[200] flex items-end justify-center"
+        style="background:rgba(0,0,0,0.7);backdrop-filter:blur(14px)" @click.self="closeVarSheet">
         <div class="w-full max-w-[430px] rounded-t-[28px] border-t overflow-hidden"
           style="background:#0c0c18;border-color:rgba(255,255,255,0.08);"
-          :style="{ paddingBottom:'calc(32px + env(safe-area-inset-bottom))' }">
+          :style="{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))' }">
           <div class="flex flex-col gap-3 px-5 pt-4">
             <div class="w-10 h-1 rounded-full self-center mb-1" style="background:rgba(255,255,255,0.08)"></div>
             <p class="text-[16px] font-black font-mono text-center text-zinc-100">
@@ -479,7 +477,7 @@
               <input v-model="varForm.key" placeholder="VARIABLE_NAME"
                 class="w-full rounded-xl px-4 py-3 text-[13px] font-mono font-bold text-zinc-100 placeholder:text-zinc-700 outline-none"
                 style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);"
-                @input="varForm.key = varForm.key.toUpperCase().replace(/[^A-Z0-9_]/g,'_')" />
+                @input="varForm.key = varForm.key.toUpperCase().replace(/[^A-Z0-9_]/g, '_')" />
             </div>
 
             <!-- VALUE -->
@@ -487,8 +485,7 @@
               <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">VALUE</p>
               <div class="flex items-center gap-2 rounded-xl px-4 py-3"
                 style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);">
-                <input v-model="varForm.value"
-                  :type="varForm.secret && !varForm.revealInForm ? 'password' : 'text'"
+                <input v-model="varForm.value" :type="varForm.secret && !varForm.revealInForm ? 'password' : 'text'"
                   placeholder="your_value_here"
                   class="flex-1 bg-transparent text-[13px] font-mono text-zinc-100 placeholder:text-zinc-700 outline-none" />
                 <button v-if="varForm.secret" @click="varForm.revealInForm = !varForm.revealInForm"
@@ -515,10 +512,9 @@
 
             <!-- SECRET toggle -->
             <button @click="varForm.secret = !varForm.secret"
-              :class="['flex items-center gap-3 px-4 py-3 rounded-xl border transition-all']"
-              :style="varForm.secret
-                ? { background:'rgba(245,158,11,0.08)', border:'1px solid rgba(245,158,11,0.25)' }
-                : { background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)' }">
+              :class="['flex items-center gap-3 px-4 py-3 rounded-xl border transition-all']" :style="varForm.secret
+                ? { background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }
+                : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }">
               <Lock :size="15" :class="varForm.secret ? 'text-amber-400' : 'text-zinc-700'" :stroke-width="2" />
               <div class="flex-1 text-left">
                 <p class="text-[12px] font-mono font-bold" :class="varForm.secret ? 'text-amber-300' : 'text-zinc-500'">
@@ -554,8 +550,7 @@
 
   <!-- ══ TOAST ══ -->
   <Transition name="toast">
-    <div v-if="toastMsg"
-      class="fixed left-1/2 -translate-x-1/2 z-[999] flex items-center gap-2 px-4 py-2.5 rounded-xl"
+    <div v-if="toastMsg" class="fixed left-1/2 -translate-x-1/2 z-[999] flex items-center gap-2 px-4 py-2.5 rounded-xl"
       style="top:calc(16px + env(safe-area-inset-top));background:rgba(12,12,24,0.95);border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(20px);">
       <div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
       <p class="text-[12px] font-mono font-bold text-zinc-200">{{ toastMsg }}</p>
@@ -585,7 +580,7 @@ async function daemonSyncAll() {
   if (!daemonConnected.value) return
   for (const proj of projects.value) {
     for (const inst of proj.instances) {
-      await syncSingleEnv(proj.name, inst.name, inst.vars).catch(() => {})
+      await syncSingleEnv(proj.name, inst.name, inst.vars).catch(() => { })
     }
   }
 }
@@ -595,28 +590,28 @@ async function daemonSyncAll() {
 // ══════════════════════════════════════════════════════════
 
 interface EnvVar {
-  id:       string
-  key:      string
-  value:    string
-  type:     string
-  secret:   boolean
+  id: string
+  key: string
+  value: string
+  type: string
+  secret: boolean
 }
 
 interface EnvInstance {
-  id:   string
+  id: string
   name: string
   type: string   // dev | qa | staging | prod | custom
   vars: EnvVar[]
 }
 
 interface EnvProject {
-  id:          string
-  name:        string
+  id: string
+  name: string
   description: string
-  icon:        string
-  color:       string
-  instances:   EnvInstance[]
-  createdAt:   string
+  icon: string
+  color: string
+  instances: EnvInstance[]
+  createdAt: string
 }
 
 // ══════════════════════════════════════════════════════════
@@ -629,27 +624,27 @@ function loadProjects(): EnvProject[] {
   try {
     const r = localStorage.getItem(ENV_PROJECTS_KEY)
     if (r) return JSON.parse(r)
-  } catch {}
+  } catch { }
   return []
 }
 
 function saveProjects() {
-  try { localStorage.setItem(ENV_PROJECTS_KEY, JSON.stringify(projects.value)) } catch {}
+  try { localStorage.setItem(ENV_PROJECTS_KEY, JSON.stringify(projects.value)) } catch { }
 }
 
 // ══════════════════════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════════════════════
 
-const projects        = ref<EnvProject[]>(loadProjects())
-const activeProjectId  = ref<string | null>(null)
+const projects = ref<EnvProject[]>(loadProjects())
+const activeProjectId = ref<string | null>(null)
 const activeInstanceId = ref<string | null>(null)
 
-const activeProject  = computed(() => projects.value.find(p => p.id === activeProjectId.value) ?? null)
+const activeProject = computed(() => projects.value.find(p => p.id === activeProjectId.value) ?? null)
 const activeInstance = computed(() => activeProject.value?.instances.find(i => i.id === activeInstanceId.value) ?? null)
 
 function goHome() {
-  activeProjectId.value  = null
+  activeProjectId.value = null
   activeInstanceId.value = null
 }
 
@@ -665,43 +660,43 @@ const projectIcons = ['🚀', '🌐', '📦', '🔧', '⚡', '🎯', '💎', '�
 const projectColors = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#3b82f6', '#f97316']
 
 const instanceTypes = [
-  { value: 'dev',     label: 'dev'     },
-  { value: 'qa',      label: 'qa'      },
+  { value: 'dev', label: 'dev' },
+  { value: 'qa', label: 'qa' },
   { value: 'staging', label: 'staging' },
-  { value: 'prod',    label: 'prod'    },
-  { value: 'local',   label: 'local'   },
-  { value: 'ci',      label: 'ci/cd'   },
+  { value: 'prod', label: 'prod' },
+  { value: 'local', label: 'local' },
+  { value: 'ci', label: 'ci/cd' },
 ]
 
 function instanceColor(type: string): string {
   const map: Record<string, string> = {
-    dev:     '#34d399',
-    qa:      '#60a5fa',
+    dev: '#34d399',
+    qa: '#60a5fa',
     staging: '#fb923c',
-    prod:    '#f87171',
-    local:   '#a78bfa',
-    ci:      '#fbbf24',
+    prod: '#f87171',
+    local: '#a78bfa',
+    ci: '#fbbf24',
   }
   return map[type] ?? '#8b5cf6'
 }
 
 function instanceIcon(type: string) {
   const map: Record<string, any> = {
-    dev:     FlaskConical,
-    qa:      Shield,
+    dev: FlaskConical,
+    qa: Shield,
     staging: Server,
-    prod:    Globe,
-    local:   HardDrive,
-    ci:      Layers,
+    prod: Globe,
+    local: HardDrive,
+    ci: Layers,
   }
   return map[type] ?? Layers
 }
 
 const varTypes = [
-  { value: 'string', label: 'string', icon: AlignLeft  },
-  { value: 'url',    label: 'url',    icon: Link        },
-  { value: 'number', label: 'number', icon: Hash        },
-  { value: 'bool',   label: 'bool',   icon: ToggleLeft  },
+  { value: 'string', label: 'string', icon: AlignLeft },
+  { value: 'url', label: 'url', icon: Link },
+  { value: 'number', label: 'number', icon: Hash },
+  { value: 'bool', label: 'bool', icon: ToggleLeft },
 ]
 
 function typeIcon(type: string) {
@@ -722,8 +717,8 @@ function totalVarCount(proj: EnvProject): number {
 // PROJECT CRUD
 // ══════════════════════════════════════════════════════════
 
-const showProjectSheet   = ref(false)
-const editProjectTarget  = ref<EnvProject | null>(null)
+const showProjectSheet = ref(false)
+const editProjectTarget = ref<EnvProject | null>(null)
 
 const projectForm = reactive({
   name: '', description: '', icon: '🚀', color: '#8b5cf6',
@@ -734,23 +729,23 @@ function onAddClick() {
     showProjectSheet.value = true
   } else if (!activeInstance.value) {
     showInstanceSheet.value = true
-    instanceForm.projectId  = activeProject.value.id
+    instanceForm.projectId = activeProject.value.id
   } else {
     openAddVar()
   }
 }
 
 function editProject(proj: EnvProject) {
-  editProjectTarget.value  = proj
-  projectForm.name         = proj.name
-  projectForm.description  = proj.description
-  projectForm.icon         = proj.icon
-  projectForm.color        = proj.color
-  showProjectSheet.value   = true
+  editProjectTarget.value = proj
+  projectForm.name = proj.name
+  projectForm.description = proj.description
+  projectForm.icon = proj.icon
+  projectForm.color = proj.color
+  showProjectSheet.value = true
 }
 
 function closeProjectSheet() {
-  showProjectSheet.value  = false
+  showProjectSheet.value = false
   editProjectTarget.value = null
   Object.assign(projectForm, { name: '', description: '', icon: '🚀', color: '#8b5cf6' })
 }
@@ -760,21 +755,21 @@ function saveProject() {
   if (editProjectTarget.value) {
     const p = projects.value.find(p => p.id === editProjectTarget.value!.id)
     if (p) {
-      p.name        = projectForm.name.trim()
+      p.name = projectForm.name.trim()
       p.description = projectForm.description.trim()
-      p.icon        = projectForm.icon
-      p.color       = projectForm.color
+      p.icon = projectForm.icon
+      p.color = projectForm.color
     }
     orbLog(`Project updated: ${projectForm.name}`)
   } else {
     projects.value.push({
-      id:          uid(),
-      name:        projectForm.name.trim(),
+      id: uid(),
+      name: projectForm.name.trim(),
       description: projectForm.description.trim(),
-      icon:        projectForm.icon,
-      color:       projectForm.color,
-      instances:   [],
-      createdAt:   new Date().toISOString(),
+      icon: projectForm.icon,
+      color: projectForm.color,
+      instances: [],
+      createdAt: new Date().toISOString(),
     })
     orbLog(`Project created: ${projectForm.name}`)
   }
@@ -801,25 +796,25 @@ function deleteProjectConfirmed() {
 // INSTANCE CRUD
 // ══════════════════════════════════════════════════════════
 
-const showInstanceSheet  = ref(false)
+const showInstanceSheet = ref(false)
 const editInstanceTarget = ref<EnvInstance | null>(null)
 
 const instanceForm = reactive({
   projectId: '',
-  name:      '',
-  type:      'dev',
+  name: '',
+  type: 'dev',
 })
 
 function editInstance(inst: EnvInstance) {
   editInstanceTarget.value = inst
-  instanceForm.name        = inst.name
-  instanceForm.type        = inst.type
-  instanceForm.projectId   = activeProjectId.value ?? ''
-  showInstanceSheet.value  = true
+  instanceForm.name = inst.name
+  instanceForm.type = inst.type
+  instanceForm.projectId = activeProjectId.value ?? ''
+  showInstanceSheet.value = true
 }
 
 function closeInstanceSheet() {
-  showInstanceSheet.value  = false
+  showInstanceSheet.value = false
   editInstanceTarget.value = null
   Object.assign(instanceForm, { projectId: '', name: '', type: 'dev' })
 }
@@ -835,7 +830,7 @@ function saveInstance() {
     orbLog(`Instance updated: ${instanceForm.name}`)
   } else {
     proj.instances.push({
-      id:   uid(),
+      id: uid(),
       name: instanceForm.name.trim(),
       type: instanceForm.type,
       vars: [],
@@ -861,10 +856,10 @@ function deleteInstance(id: string) {
 // VAR CRUD
 // ══════════════════════════════════════════════════════════
 
-const showVarSheet   = ref(false)
-const editVarTarget  = ref<EnvVar | null>(null)
-const varSearch      = ref('')
-const varTypeFilter  = ref('all')
+const showVarSheet = ref(false)
+const editVarTarget = ref<EnvVar | null>(null)
+const varSearch = ref('')
+const varTypeFilter = ref('all')
 const revealedVarIds = ref(new Set<string>())
 
 const varForm = reactive({
@@ -874,8 +869,8 @@ const varForm = reactive({
 const filteredVars = computed(() => {
   if (!activeInstance.value) return []
   return activeInstance.value.vars.filter(v => {
-    const matchType   = varTypeFilter.value === 'all' || v.type === varTypeFilter.value
-    const q           = varSearch.value.toLowerCase()
+    const matchType = varTypeFilter.value === 'all' || v.type === varTypeFilter.value
+    const q = varSearch.value.toLowerCase()
     const matchSearch = !q || v.key.toLowerCase().includes(q) || v.value.toLowerCase().includes(q)
     return matchType && matchSearch
   })
@@ -884,25 +879,25 @@ const filteredVars = computed(() => {
 function openAddVar() {
   editVarTarget.value = null
   Object.assign(varForm, { key: '', value: '', type: 'string', secret: false, revealInForm: false })
-  showVarSheet.value  = true
+  showVarSheet.value = true
 }
 
 function editVar(v: EnvVar) {
-  editVarTarget.value  = v
-  varForm.key          = v.key
-  varForm.value        = v.value
-  varForm.type         = v.type
-  varForm.secret       = v.secret
+  editVarTarget.value = v
+  varForm.key = v.key
+  varForm.value = v.value
+  varForm.type = v.type
+  varForm.secret = v.secret
   varForm.revealInForm = false
-  showVarSheet.value   = true
+  showVarSheet.value = true
 }
 
 function closeVarSheet() {
-  showVarSheet.value  = false
+  showVarSheet.value = false
   editVarTarget.value = null
 }
 
-function saveVar() {
+async function saveVar() {
   if (!varForm.key.trim()) return
   const proj = projects.value.find(p => p.id === activeProjectId.value)
   const inst = proj?.instances.find(i => i.id === activeInstanceId.value)
@@ -911,34 +906,44 @@ function saveVar() {
   if (editVarTarget.value) {
     const v = inst.vars.find(v => v.id === editVarTarget.value!.id)
     if (v) {
-      v.key    = varForm.key
-      v.value  = varForm.value
-      v.type   = varForm.type
+      v.key = varForm.key
+      v.value = varForm.value
+      v.type = varForm.type
       v.secret = varForm.secret
     }
     orbLog(`ENV updated: ${varForm.key}`)
   } else {
     inst.vars.push({
-      id:     uid(),
-      key:    varForm.key,
-      value:  varForm.value,
-      type:   varForm.type,
+      id: uid(),
+      key: varForm.key,
+      value: varForm.value,
+      type: varForm.type,
       secret: varForm.secret,
     })
     orbLog(`ENV added: ${varForm.key}`)
   }
   saveProjects()
+  if (daemonConnected.value && proj) {
+    await syncSingleEnv(proj.name, inst.name, inst.vars).catch(e =>
+      orbLog(`Daemon ENV sync failed: ${e.message}`, 'warn')
+    )
+  }
   closeVarSheet()
   showToast(editVarTarget.value ? 'var_updated' : 'var_added')
 }
 
-function deleteVar(id: string) {
+async function deleteVar(id: string) {
   const proj = projects.value.find(p => p.id === activeProjectId.value)
   const inst = proj?.instances.find(i => i.id === activeInstanceId.value)
   if (!inst) return
   const v = inst.vars.find(v => v.id === id)
   inst.vars = inst.vars.filter(v => v.id !== id)
   saveProjects()
+  if (daemonConnected.value && proj) {
+    await syncSingleEnv(proj.name, inst.name, inst.vars).catch(e =>
+      orbLog(`Daemon ENV sync failed: ${e.message}`, 'warn')
+    )
+  }
   closeVarSheet()
   showToast(`deleted: ${v?.key}`)
   orbLog(`ENV deleted: ${v?.key}`)
@@ -987,15 +992,55 @@ function showToast(msg: string) {
 </script>
 
 <style scoped>
-.devkit-root { background:#060810; min-height:100%; }
-.scrollbar-hide::-webkit-scrollbar { display:none; }
-.scrollbar-hide { -ms-overflow-style:none; scrollbar-width:none; }
-.sheet-enter-active,.sheet-leave-active { transition:opacity .28s ease; }
-.sheet-enter-active>div,.sheet-leave-active>div { transition:transform .32s cubic-bezier(.32,1.1,.64,1); }
-.sheet-enter-from,.sheet-leave-to { opacity:0; }
-.sheet-enter-from>div,.sheet-leave-to>div { transform:translateY(100%); }
-.toast-enter-active { transition:all .3s cubic-bezier(0.34,1.1,0.64,1); }
-.toast-leave-active { transition:all .2s ease; }
-.toast-enter-from { opacity:0; transform:translate(-50%,-12px) scale(0.92); }
-.toast-leave-to { opacity:0; transform:translate(-50%,-6px) scale(0.96); }
+.devkit-root {
+  background: #060810;
+  min-height: 100%;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.sheet-enter-active,
+.sheet-leave-active {
+  transition: opacity .28s ease;
+}
+
+.sheet-enter-active>div,
+.sheet-leave-active>div {
+  transition: transform .32s cubic-bezier(.32, 1.1, .64, 1);
+}
+
+.sheet-enter-from,
+.sheet-leave-to {
+  opacity: 0;
+}
+
+.sheet-enter-from>div,
+.sheet-leave-to>div {
+  transform: translateY(100%);
+}
+
+.toast-enter-active {
+  transition: all .3s cubic-bezier(0.34, 1.1, 0.64, 1);
+}
+
+.toast-leave-active {
+  transition: all .2s ease;
+}
+
+.toast-enter-from {
+  opacity: 0;
+  transform: translate(-50%, -12px) scale(0.92);
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -6px) scale(0.96);
+}
 </style>

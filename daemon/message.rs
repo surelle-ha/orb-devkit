@@ -42,6 +42,9 @@ pub enum AppMessage {
 
     /// Trigger a reload notification (e.g. env changed)
     TriggerReload { target: String },
+
+    /// Reset all daemon data and unpair all devices
+    Reset,
 }
 
 /// All messages the daemon can send to the mobile app
@@ -72,6 +75,9 @@ pub enum DaemonMessage {
 
     /// Reload triggered
     Reloading { target: String },
+
+    /// Reset confirmed — client should clear its pairing state
+    ResetOk,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

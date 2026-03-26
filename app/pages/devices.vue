@@ -21,7 +21,6 @@
             {{ viewingDevice.online ? 'LIVE' : 'OFFLINE' }}
           </span>
         </div>
-        <!-- Device actions button -->
         <button v-if="viewingDevice" @click="showDeviceActions = true"
           class="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
           style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.18);">
@@ -38,7 +37,6 @@
     <!-- ══ DEVICE LIST VIEW ══ -->
     <template v-if="!viewingDevice">
 
-      <!-- Dev Mode OFF — no devices can connect -->
       <div v-if="!devMode" class="mx-4 mb-4 rounded-3xl overflow-hidden relative py-10 flex flex-col items-center gap-5"
         style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);">
         <div class="absolute inset-0 pointer-events-none"
@@ -67,7 +65,6 @@
         </button>
       </div>
 
-      <!-- Dev mode ON but no devices yet -->
       <div v-else-if="!devices.length" class="mx-4 mb-4 rounded-3xl overflow-hidden relative py-10 flex flex-col items-center gap-5"
         style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);">
         <div class="absolute inset-0 pointer-events-none"
@@ -96,9 +93,7 @@
         </button>
       </div>
 
-      <!-- Device list when available -->
       <template v-if="devices.length">
-        <!-- Section: online -->
         <div v-if="onlineDevices.length" class="px-5 pb-2">
           <p class="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">online</p>
         </div>
@@ -134,7 +129,6 @@
           </button>
         </div>
 
-        <!-- Section: offline -->
         <div v-if="offlineDevices.length" class="px-5 pb-2">
           <p class="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">previously seen</p>
         </div>
@@ -166,7 +160,6 @@
           </div>
         </div>
 
-        <!-- Pair new device -->
         <div class="mx-4 mt-3">
           <button @click="showPairing = true"
             class="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-[13px] font-bold font-mono active:scale-95 transition-all"
@@ -177,7 +170,6 @@
         </div>
       </template>
 
-      <!-- Available features preview -->
       <div class="px-5 pb-2 mt-4">
         <p class="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">available_metrics</p>
       </div>
@@ -199,7 +191,6 @@
 
     <!-- ══ DEVICE MONITOR VIEW ══ -->
     <template v-else>
-      <!-- Offline banner (stays on page when device goes offline) -->
       <Transition name="slide-down">
         <div v-if="!viewingDevice.online" class="mx-4 mb-4 rounded-2xl overflow-hidden"
           style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);">
@@ -211,16 +202,25 @@
               <p class="text-[12px] font-mono font-bold text-rose-300">daemon_disconnected</p>
               <p class="text-[10px] font-mono text-rose-700 mt-0.5">Last seen {{ formatLastSeen(viewingDevice.lastSeen) }}</p>
             </div>
-            <button @click="viewingDeviceId = null"
-              class="px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold active:scale-95"
-              style="background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.2);">
-              back
-            </button>
+            <!-- ✅ FIX: Reconnect button replaces just "back" -->
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <button @click="handleReconnect"
+                :disabled="reconnecting"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold active:scale-95 transition-all disabled:opacity-50"
+                :style="{ background: accent + '18', border: `1px solid ${accent}33`, color: accent }">
+                <RefreshCw :size="11" :stroke-width="2.5" :class="reconnecting ? 'animate-spin' : ''" />
+                {{ reconnecting ? 'connecting' : 'reconnect' }}
+              </button>
+              <button @click="viewingDeviceId = null"
+                class="px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold active:scale-95"
+                style="background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.2);">
+                back
+              </button>
+            </div>
           </div>
         </div>
       </Transition>
 
-      <!-- Device summary card -->
       <div class="mx-4 mb-4 rounded-2xl overflow-hidden"
         :style="{ background: viewingDevice.online ? accent + '07' : 'rgba(255,255,255,0.02)', border: `1px solid ${viewingDevice.online ? accent + '20' : 'rgba(255,255,255,0.06)'}` }">
         <div class="flex items-center gap-3 px-4 py-3.5">
@@ -250,9 +250,7 @@
         </div>
       </div>
 
-      <!-- Only show metrics if online -->
       <template v-if="viewingDevice.online">
-        <!-- ── METRIC PILLS ── -->
         <div class="grid grid-cols-2 gap-2.5 px-4 mb-4">
           <div v-for="metric in topMetrics" :key="metric.label"
             class="rounded-2xl px-4 py-3.5 relative overflow-hidden"
@@ -272,7 +270,6 @@
           </div>
         </div>
 
-        <!-- ── CPU CORES ── -->
         <div class="px-5 pb-2 flex items-center justify-between">
           <p class="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">cpu_cores</p>
           <span class="text-[10px] font-mono font-bold" :style="{ color: cpuColor }">{{ simCpu }}% avg</span>
@@ -299,7 +296,6 @@
           </div>
         </div>
 
-        <!-- ── RAM ── -->
         <div class="px-5 pb-2 flex items-center justify-between">
           <p class="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">memory</p>
           <span class="text-[10px] font-mono font-bold text-violet-400">{{ simRam.toFixed(1) }}GB / {{ viewingDevice.ramGb }}GB</span>
@@ -326,7 +322,6 @@
           </div>
         </div>
 
-        <!-- ── NETWORK ── -->
         <div class="px-5 pb-2">
           <p class="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">network_io</p>
         </div>
@@ -364,8 +359,16 @@
           <MonitorOff :size="36" class="text-zinc-700" :stroke-width="1.5" />
           <div class="text-center">
             <p class="text-[15px] font-bold text-zinc-500">Device offline</p>
-            <p class="text-[12px] font-mono text-zinc-700 mt-1">Restart the daemon to reconnect</p>
+            <p class="text-[12px] font-mono text-zinc-700 mt-1">Start the daemon then reconnect</p>
           </div>
+          <!-- ✅ FIX: Reconnect button in the body too -->
+          <button @click="handleReconnect"
+            :disabled="reconnecting"
+            class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-mono font-bold active:scale-95 disabled:opacity-50"
+            :style="{ background: accent + '18', border: `1px solid ${accent}33`, color: accent }">
+            <RefreshCw :size="15" :stroke-width="2" :class="reconnecting ? 'animate-spin' : ''" />
+            {{ reconnecting ? 'connecting…' : 'reconnect' }}
+          </button>
           <button @click="showDeviceActions = true"
             class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-mono font-bold active:scale-95"
             style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#f87171;">
@@ -390,7 +393,7 @@
     </Transition>
   </Teleport>
 
-  <!-- Device Actions Sheet (Disconnect / Unpair) -->
+  <!-- Device Actions Sheet -->
   <Teleport to="body">
     <Transition name="sheet-fade">
       <div v-if="showDeviceActions"
@@ -401,8 +404,7 @@
           style="background:#0e0b1e;border-color:rgba(239,68,68,0.25);"
           :style="{ paddingBottom:'calc(40px + env(safe-area-inset-bottom))' }">
           <div class="w-10 h-1 rounded-full mx-auto mb-5" style="background:rgba(239,68,68,0.3)"></div>
-          
-          <!-- Device info -->
+
           <div class="flex items-center gap-3 mb-5 px-1">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
               style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.18);">
@@ -414,7 +416,7 @@
             </div>
           </div>
 
-          <!-- Disconnect -->
+          <!-- Disconnect (when online) -->
           <button v-if="viewingDevice?.online" @click="handleDisconnect"
             class="w-full flex items-center gap-3 px-4 py-4 rounded-2xl mb-3 active:scale-[0.98] transition-all"
             style="background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.2);">
@@ -424,7 +426,7 @@
             </div>
             <div class="flex-1 text-left">
               <p class="text-[14px] font-bold text-orange-300">Disconnect</p>
-              <p class="text-[11px] text-zinc-500 mt-0.5">Close daemon connection (keeps pairing)</p>
+              <p class="text-[11px] text-zinc-500 mt-0.5">Close connection — use reconnect to restore</p>
             </div>
           </button>
 
@@ -438,7 +440,7 @@
             </div>
             <div class="flex-1 text-left">
               <p class="text-[14px] font-bold text-rose-300">Unpair &amp; Remove</p>
-              <p class="text-[11px] text-zinc-500 mt-0.5">Permanently removes device pairing</p>
+              <p class="text-[11px] text-zinc-500 mt-0.5">Sends Reset to daemon, removes local pairing</p>
             </div>
           </button>
 
@@ -471,7 +473,7 @@
           </div>
           <p class="text-[18px] font-black text-center mb-2 text-zinc-100">Unpair device?</p>
           <p class="text-[13px] text-center leading-relaxed mb-2 text-zinc-500">
-            <span class="text-zinc-300 font-bold">{{ confirmUnpairTarget?.name }}</span> will be removed from your device list. You'll need to run <span class="text-rose-400 font-bold">orb-daemon pair</span> again to reconnect.
+            <span class="text-zinc-300 font-bold">{{ confirmUnpairTarget?.name }}</span> will be removed. The daemon's data will be reset and you'll need to run <span class="text-rose-400 font-bold">orb-daemon pair</span> again.
           </p>
           <p class="text-[11px] font-mono text-rose-700 text-center mb-6">This cannot be undone.</p>
           <button @click="executeUnpair"
@@ -495,7 +497,7 @@ import { ref, computed, watch, onUnmounted } from 'vue'
 import {
   Monitor, MonitorOff, Zap, ChevronLeft, Trash2, QrCode,
   Cpu, MemoryStick, Thermometer, ArrowDown, ArrowUp,
-  Activity, HardDrive, WifiOff, MoreVertical,
+  Activity, HardDrive, WifiOff, MoreVertical, RefreshCw,
 } from 'lucide-vue-next'
 import { settings, orbLog } from '../composables/useStore'
 import { devMode, toggleDevMode } from '../composables/useDevMode'
@@ -509,10 +511,11 @@ const { navParams } = useNav()
 const showPairing = ref(false)
 const showDeviceActions = ref(false)
 const confirmUnpairTarget = ref<Device | null>(null)
+const reconnecting = ref(false)
 
-const { disconnect: daemonDisconnect, unpair: daemonUnpair } = useDaemon()
+const { disconnect: daemonDisconnect, resetDaemon, connect: daemonConnect } = useDaemon()
 
-// ── Device selection ────────────────────────────────────────
+// ── Device selection ─────────────────────────────────────
 const viewingDeviceId = ref<string | null>(navParams.value.deviceId ?? null)
 
 watch(() => navParams.value.deviceId, (id) => {
@@ -539,24 +542,37 @@ function formatLastSeen(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-// ── Device actions ─────────────────────────────────────────
+// ── Device actions ───────────────────────────────────────
 function handleDisconnect() {
   daemonDisconnect()
   showDeviceActions.value = false
   orbLog('Device disconnected manually')
 }
 
-function executeUnpair() {
+// ✅ FIX: Reconnect button handler
+async function handleReconnect() {
+  if (reconnecting.value) return
+  reconnecting.value = true
+  orbLog('[Devices] Manual reconnect requested…')
+  try {
+    await daemonConnect()
+  } finally {
+    reconnecting.value = false
+  }
+}
+
+// ✅ FIX: executeUnpair now sends Reset to daemon first
+async function executeUnpair() {
   const target = confirmUnpairTarget.value
   if (!target) return
-  daemonUnpair()
+  await resetDaemon()           // sends Reset to daemon + clears local pairing
   removeDevice(target.id)
   confirmUnpairTarget.value = null
   viewingDeviceId.value = null
   orbLog(`Device unpaired: ${target.name}`)
 }
 
-// ── Features list ────────────────────────────────────────────
+// ── Features list ────────────────────────────────────────
 const features = [
   { icon: Cpu,         label: 'CPU Usage',   sub: 'Per-core utilization & frequency', color: '#34d399' },
   { icon: MemoryStick, label: 'Memory',      sub: 'Active, cached & free RAM',        color: '#8b5cf6' },
@@ -565,7 +581,6 @@ const features = [
   { icon: HardDrive,   label: 'Disk I/O',    sub: 'Read/write throughput',            color: '#fb923c' },
 ]
 
-// ── Device specs row ─────────────────────────────────────────
 const deviceSpecs = computed(() => {
   if (!viewingDevice.value) return []
   const d = viewingDevice.value
@@ -576,9 +591,7 @@ const deviceSpecs = computed(() => {
   ]
 })
 
-// ══════════════════════════════════════════════════════════
-// SIMULATION
-// ══════════════════════════════════════════════════════════
+// ── Simulation ───────────────────────────────────────────
 const GW = 60
 const simCpu  = ref(0)
 const simRam  = ref(0)
@@ -664,7 +677,6 @@ watch(viewingDeviceId,(id)=>{
   if(id&&devices.value.find(d=>d.id===id)?.online)startSim()
 },{immediate:true})
 
-// Watch for device going offline while viewing — stop sim but stay on page
 watch(()=>viewingDevice.value?.online,(online)=>{
   if(!online)stopSim()
   else if(viewingDeviceId.value)startSim()
