@@ -6,6 +6,7 @@ export type PageId =
   | 'settings' | 'developer' | 'orb' | 'transactions'
   | 'profile' | 'randomizer' | 'about'
   | 'prompts' | 'passwords' | 'vibecode' | 'devices'
+  | 'faq'
 
 const TAB_ORDER: PageId[] = ['home', 'env', 'more', 'devices']
 

@@ -2,6 +2,11 @@
 // Orb Daemon client — connects to the desktop daemon over plain WebSocket (ws://)
 // The daemon listens on port 3132 (tls_port + 1) for plain WS connections.
 // IMPORTANT: Connections are only allowed when dev mode is ON.
+//
+// SPRINT MA582 — Query handler:
+//   The daemon REPL can now send Query* messages to ask the mobile app to
+//   return its data on demand.  handleMessage() dispatches these to
+//   handleQueryMessage() which reads localStorage and sends back a *Data reply.
 
 import { ref, computed } from 'vue'
 import { orbLog } from './useStore'
@@ -238,6 +243,130 @@ function updateDeviceLastSeen(info: DaemonInfo) {
 }
 
 // ──────────────────────────────────────────────────────────
+// QUERY HANDLER — responds to daemon REPL queries  (MA582)
+// ──────────────────────────────────────────────────────────
+
+const LS_KEYS = {
+  ENV_PROJECTS: 'orb_env_projects_v2',
+  VAULT:        'orb_vault_entries_v1',
+  PROMPTS:      'orb_prompts_v1',
+  SESSIONS:     'orb_vibecode_history_v1',
+  BLOCKLIST:    'orb_vibecode_platforms_v1',
+  SETTINGS:     'orb_settings_v1',
+}
+
+function readJson(key: string): any {
+  try {
+    const r = localStorage.getItem(key)
+    return r ? JSON.parse(r) : null
+  } catch { return null }
+}
+
+/**
+ * Called whenever the daemon sends a Query* message over the WebSocket.
+ * Reads the relevant data from localStorage and sends back a *Data reply.
+ * Passwords in vault entries are NEVER transmitted — they are replaced
+ * with a placeholder string.
+ */
+function handleQueryMessage(type: string) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return
+
+  let reply: any = null
+
+  switch (type) {
+    case 'QueryEnvs': {
+      const projects = readJson(LS_KEYS.ENV_PROJECTS) ?? []
+      reply = { type: 'EnvsData', payload: { projects } }
+      orbLog(`[Orb] REPL query: QueryEnvs → ${projects.length} projects`)
+      break
+    }
+
+    case 'QueryVault': {
+      const raw: any[] = readJson(LS_KEYS.VAULT) ?? []
+      // Strip passwords — vault is locked on device, we only send metadata
+      const safe = raw.map(e => ({
+        id:       e.id,
+        service:  e.service,
+        username: e.username,
+        category: e.category,
+        url:      e.url,
+        notes:    e.notes,
+        // password deliberately omitted / redacted
+      }))
+      reply = { type: 'VaultData', payload: { entries: safe } }
+      orbLog(`[Orb] REPL query: QueryVault → ${safe.length} entries (passwords redacted)`)
+      break
+    }
+
+    case 'QueryPrompts': {
+      const prompts = readJson(LS_KEYS.PROMPTS) ?? []
+      reply = { type: 'PromptsData', payload: { prompts } }
+      orbLog(`[Orb] REPL query: QueryPrompts → ${prompts.length} prompts`)
+      break
+    }
+
+    case 'QuerySessions': {
+      const sessions = readJson(LS_KEYS.SESSIONS) ?? []
+      reply = { type: 'SessionsData', payload: { sessions } }
+      orbLog(`[Orb] REPL query: QuerySessions → ${sessions.length} sessions`)
+      break
+    }
+
+    case 'QueryBlocklist': {
+      const platforms = readJson(LS_KEYS.BLOCKLIST) ?? []
+      reply = { type: 'BlocklistData', payload: { platforms } }
+      orbLog(`[Orb] REPL query: QueryBlocklist → ${platforms.length} platforms`)
+      break
+    }
+
+    case 'QuerySettings': {
+      const settings = readJson(LS_KEYS.SETTINGS) ?? {}
+      reply = { type: 'SettingsData', payload: { settings } }
+      orbLog(`[Orb] REPL query: QuerySettings`)
+      break
+    }
+
+    case 'QueryAll': {
+      const projects: any[] = readJson(LS_KEYS.ENV_PROJECTS) ?? []
+      const vault:    any[] = readJson(LS_KEYS.VAULT)         ?? []
+      const prompts:  any[] = readJson(LS_KEYS.PROMPTS)       ?? []
+      const sessions: any[] = readJson(LS_KEYS.SESSIONS)      ?? []
+      const blocklist:any[] = readJson(LS_KEYS.BLOCKLIST)     ?? []
+
+      const envVars = projects.reduce((sum: number, p: any) =>
+        sum + (p.instances ?? []).reduce((s: number, i: any) => s + (i.vars ?? []).length, 0), 0)
+      const blocked = blocklist.filter((p: any) => p.enabled).length
+
+      reply = {
+        type: 'OverviewData',
+        payload: {
+          env_projects:  projects.length,
+          env_vars:      envVars,
+          vault_entries: vault.length,
+          prompts:       prompts.length,
+          sessions:      sessions.length,
+          blocked,
+        },
+      }
+      orbLog(`[Orb] REPL query: QueryAll → overview sent`)
+      break
+    }
+
+    default:
+      orbLog(`[Orb] Unknown query type: ${type}`, 'warn')
+      return
+  }
+
+  if (reply) {
+    try {
+      ws.send(JSON.stringify(reply))
+    } catch (e: any) {
+      orbLog(`[Orb] Failed to send query reply: ${e.message}`, 'error')
+    }
+  }
+}
+
+// ──────────────────────────────────────────────────────────
 // CONNECTION — gated by dev mode
 // ──────────────────────────────────────────────────────────
 
@@ -359,10 +488,6 @@ export function unpair(): void {
   orbLog('Unpaired from daemon')
 }
 
-/**
- * resetDaemon — sends Reset command to daemon then clears local pairing state.
- * The daemon will wipe its store and return ResetOk, after which we disconnect.
- */
 export async function resetDaemon(): Promise<void> {
   if (isSocketAlive()) {
     try {
@@ -503,6 +628,12 @@ const pendingReplies = new Map<number, {
   type:    string
 }>()
 
+// Query message types — handled immediately, not via pendingReplies
+const QUERY_TYPES = new Set([
+  'QueryEnvs', 'QueryVault', 'QueryPrompts',
+  'QuerySessions', 'QueryBlocklist', 'QuerySettings', 'QueryAll',
+])
+
 function parseIncoming(data: ArrayBuffer | string): DaemonMessage | null {
   try {
     let json: string
@@ -528,6 +659,16 @@ function handleMessage(data: ArrayBuffer | string) {
 
   if (status.value !== 'connected') status.value = 'connected'
 
+  // ── MA582: Handle Query* messages from the daemon REPL ──
+  // These arrive as unsolicited messages — the daemon is asking us
+  // for data.  We respond immediately and do NOT consume a pendingReply.
+  if (QUERY_TYPES.has(msg.type)) {
+    orbLog(`[Orb] REPL query received: ${msg.type}`)
+    handleQueryMessage(msg.type)
+    return
+  }
+
+  // Normal reply path — match to a pending sendAndWait()
   const entry = pendingReplies.entries().next().value
   if (entry) {
     const [key, { resolve, type }] = entry

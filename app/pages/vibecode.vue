@@ -3,7 +3,7 @@
 
     <!-- Header -->
     <div class="flex items-center gap-3 px-5 pt-6 pb-4">
-      <button @click="navigate('home')"
+      <button @click="navigate('more')"
         class="w-9 h-9 rounded-2xl flex items-center justify-center active:scale-90 transition-transform"
         style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">
         <ChevronLeft :size="18" class="text-zinc-300" :stroke-width="2.5" />
@@ -22,7 +22,6 @@
         ? { background: `linear-gradient(135deg, #0a0f1a, ${accent}22)`, border: `1px solid ${accent}44`, boxShadow: `0 0 40px ${accent}22` }
         : { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }">
 
-      <!-- Active pulse ring -->
       <div v-if="sessionActive" class="absolute inset-0 pointer-events-none rounded-3xl"
         :style="{ boxShadow: `inset 0 0 40px ${accent}18` }"></div>
 
@@ -51,7 +50,6 @@
 
         <!-- Controls -->
         <div class="flex items-center gap-3">
-          <!-- Duration picker -->
           <div class="flex gap-1.5" v-if="!sessionActive">
             <button v-for="d in durations" :key="d.value"
               @click="selectedDuration = d.value"
@@ -175,10 +173,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted, reactive } from 'vue'
-import {
-  ChevronLeft, PlayCircle, StopCircle, CheckCircle, Brain,
-} from 'lucide-vue-next'
+import { ref, computed, onUnmounted } from 'vue'
+import { ChevronLeft, PlayCircle, StopCircle, CheckCircle, Brain } from 'lucide-vue-next'
 import { settings, orbLog } from '../composables/useStore'
 import { useNav } from '../composables/useNav'
 import { useDaemon } from '~/composables/useDaemon'
@@ -200,14 +196,14 @@ const HISTORY_KEY   = 'orb_vibecode_history_v1'
 interface Platform { id: string; name: string; icon: string; domains: string[]; enabled: boolean }
 
 const defaultPlatforms: Platform[] = [
-  { id: 'chatgpt',   name: 'ChatGPT',     icon: '🤖', domains: ['chat.openai.com', 'chatgpt.com'], enabled: true  },
-  { id: 'claude',    name: 'Claude',      icon: '🔮', domains: ['claude.ai'],                      enabled: true  },
-  { id: 'gemini',    name: 'Gemini',      icon: '♊', domains: ['gemini.google.com'],               enabled: true  },
-  { id: 'copilot',   name: 'Copilot',     icon: '🪟', domains: ['copilot.microsoft.com'],           enabled: true  },
-  { id: 'perplexity',name: 'Perplexity',  icon: '🔍', domains: ['perplexity.ai'],                  enabled: true  },
-  { id: 'grok',      name: 'Grok',        icon: '𝕏',  domains: ['grok.x.ai'],                      enabled: false },
-  { id: 'cursor',    name: 'Cursor',      icon: '⌨️', domains: ['cursor.sh', 'cursor.com'],        enabled: false },
-  { id: 'v0',        name: 'v0 by Vercel',icon: '▲', domains: ['v0.dev'],                           enabled: false },
+  { id: 'chatgpt',    name: 'ChatGPT',      icon: '🤖', domains: ['chat.openai.com', 'chatgpt.com'], enabled: true  },
+  { id: 'claude',     name: 'Claude',       icon: '🔮', domains: ['claude.ai'],                      enabled: true  },
+  { id: 'gemini',     name: 'Gemini',       icon: '♊', domains: ['gemini.google.com'],               enabled: true  },
+  { id: 'copilot',    name: 'Copilot',      icon: '🪟', domains: ['copilot.microsoft.com'],           enabled: true  },
+  { id: 'perplexity', name: 'Perplexity',   icon: '🔍', domains: ['perplexity.ai'],                  enabled: true  },
+  { id: 'grok',       name: 'Grok',         icon: '𝕏',  domains: ['grok.x.ai'],                      enabled: false },
+  { id: 'cursor',     name: 'Cursor',       icon: '⌨️', domains: ['cursor.sh', 'cursor.com'],        enabled: false },
+  { id: 'v0',         name: 'v0 by Vercel', icon: '▲',  domains: ['v0.dev'],                         enabled: false },
 ]
 
 function loadPlatforms(): Platform[] {
@@ -220,12 +216,11 @@ function loadPlatforms(): Platform[] {
   } catch {}
   return defaultPlatforms
 }
-
 function savePlatforms() {
   try { localStorage.setItem(PLATFORMS_KEY, JSON.stringify(platforms.value)) } catch {}
 }
 
-const platforms = ref<Platform[]>(loadPlatforms())
+const platforms     = ref<Platform[]>(loadPlatforms())
 const enabledBlocks = computed(() => platforms.value.filter(p => p.enabled))
 const blockedCount  = computed(() => enabledBlocks.value.length)
 
@@ -260,32 +255,25 @@ const formattedTime = computed(() => {
 })
 
 function startSession() {
-  secondsLeft.value = selectedDuration.value * 60
+  secondsLeft.value  = selectedDuration.value * 60
   sessionActive.value = true
   orbLog(`Vibecode session started: ${selectedDuration.value}min`)
   daemonSyncBlocklist()
   timerInterval = setInterval(() => {
-    if (secondsLeft.value <= 0) {
-      completeSession()
-    } else {
-      secondsLeft.value--
-    }
+    if (secondsLeft.value <= 0) completeSession()
+    else secondsLeft.value--
   }, 1000)
 }
 
 function stopSession() {
-  clearInterval(timerInterval ?? undefined)
-  timerInterval = null
+  clearInterval(timerInterval ?? undefined); timerInterval = null
   sessionActive.value = false
   orbLog('Vibecode session stopped early')
 }
 
 function completeSession() {
-  clearInterval(timerInterval ?? undefined)
-  timerInterval = null
-  sessionActive.value = false
-  secondsLeft.value = 0
-  // Save to history
+  clearInterval(timerInterval ?? undefined); timerInterval = null
+  sessionActive.value = false; secondsLeft.value = 0
   const now = new Date()
   sessionHistory.value.unshift({
     duration: selectedDuration.value,
@@ -316,18 +304,14 @@ const completedToday = computed(() => {
   return sessionHistory.value.filter(s => new Date(s.completedAt).toDateString() === today).length
 })
 
-const totalMinutes = computed(() => sessionHistory.value.reduce((s, r) => s + r.duration, 0))
+const totalMinutes      = computed(() => sessionHistory.value.reduce((s, r) => s + r.duration, 0))
 const totalFocusHours   = computed(() => Math.floor(totalMinutes.value / 60))
 const totalFocusMinutes = computed(() => totalMinutes.value % 60)
 const streak = computed(() => {
-  // Simple streak: count consecutive days
   const days = new Set(sessionHistory.value.map(s => new Date(s.completedAt).toDateString()))
   let count = 0
   const d = new Date()
-  while (days.has(d.toDateString())) {
-    count++
-    d.setDate(d.getDate() - 1)
-  }
+  while (days.has(d.toDateString())) { count++; d.setDate(d.getDate() - 1) }
   return count
 })
 </script>

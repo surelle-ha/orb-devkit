@@ -9,7 +9,7 @@
       </Transition>
     </div>
 
-    <!-- Tab bar -->
+    <!-- Tab bar — visible on all pages except 'settings' and 'developer' -->
     <nav v-if="isTabPage" class="flex-shrink-0 flex items-center z-50"
       style="background:rgba(6,8,16,0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,0.06);padding-bottom:calc(8px + env(safe-area-inset-bottom));">
 
@@ -149,8 +149,12 @@ const showDevConfirm = ref(false)
 function onDevModePress()  { showDevConfirm.value = true }
 function confirmToggle()   { showDevConfirm.value = false; toggleDevMode() }
 
-const TAB_PAGES = new Set(['home', 'env', 'more', 'devices'])
-const isTabPage = computed(() => TAB_PAGES.has(activePage.value))
+// ── Tab bar visibility ─────────────────────────────────────
+// Show the bottom nav on all pages EXCEPT purely internal/settings pages.
+// passwords, vibecode, prompts are sub-tools but should keep the nav
+// so users can quickly jump to other sections without going back first.
+const NO_NAV_PAGES = new Set(['settings', 'developer', 'about'])
+const isTabPage = computed(() => !NO_NAV_PAGES.has(activePage.value))
 
 const PAGE_MAP: Record<string, any> = {
   home: Index, env: Env, more: More, settings: Settings,
@@ -169,6 +173,7 @@ const rightTabs = [
 ]
 
 function handlePop() {
+  const TAB_PAGES = new Set(['home', 'env', 'more', 'devices'])
   const idx = TAB_ORDER.indexOf(activePage.value)
   if (idx > 0) navigate(TAB_ORDER[idx - 1])
   else if (!TAB_PAGES.has(activePage.value)) navigate('more')

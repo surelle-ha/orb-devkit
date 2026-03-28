@@ -3,7 +3,7 @@
 
     <!-- Header -->
     <div class="flex items-center gap-3 px-5 pt-6 pb-4">
-      <button @click="navigate('home')"
+      <button @click="navigate('more')"
         class="w-9 h-9 rounded-2xl flex items-center justify-center active:scale-90 transition-transform"
         style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">
         <ChevronLeft :size="18" class="text-zinc-300" :stroke-width="2.5" />
@@ -32,6 +32,7 @@
         <div class="text-center">
           <p class="text-[16px] font-black text-zinc-100">Vault is locked</p>
           <p class="text-[12px] font-mono text-zinc-500 mt-1">Enter master password to unlock</p>
+          <p class="text-[11px] font-mono text-zinc-700 mt-1">Also unlocks the ENV manager</p>
         </div>
         <div class="w-full flex gap-2">
           <div class="flex-1 flex items-center gap-2 rounded-2xl px-4 py-3"
@@ -53,7 +54,8 @@
         </div>
         <p v-if="unlockError" class="text-[12px] font-bold text-rose-400">{{ unlockError }}</p>
         <p v-if="!hasMasterSet" class="text-[11px] font-mono text-zinc-600 text-center leading-relaxed">
-          First time? Any password you enter will become your master password.
+          First time? Any password you enter will become your master password.<br>
+          <span class="text-zinc-700">It will also lock your ENV manager.</span>
         </p>
       </div>
     </div>
@@ -116,7 +118,6 @@
           class="rounded-2xl overflow-hidden"
           :style="{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }">
           <div class="flex items-center gap-3 px-4 py-3.5">
-            <!-- favicon/icon -->
             <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-[18px]"
               :style="{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }">
               {{ entry.favicon || '🔑' }}
@@ -125,7 +126,6 @@
               <p class="text-[13px] font-black font-mono text-zinc-100 truncate">{{ entry.service }}</p>
               <p class="text-[11px] font-mono text-zinc-500 truncate">{{ entry.username }}</p>
             </div>
-            <!-- Actions -->
             <div class="flex items-center gap-1.5 flex-shrink-0">
               <button @click="copyUsername(entry)"
                 class="w-7 h-7 rounded-lg flex items-center justify-center active:scale-90 transition-all"
@@ -146,7 +146,6 @@
               </button>
             </div>
           </div>
-          <!-- Password row (masked) -->
           <div class="border-t border-white/5 px-4 py-2.5 flex items-center gap-2">
             <Key :size="11" class="text-zinc-700 flex-shrink-0" :stroke-width="2" />
             <p class="flex-1 text-[11px] font-mono truncate"
@@ -226,7 +225,6 @@
               </div>
             </div>
 
-            <!-- Strength indicator -->
             <div v-if="form.password" class="flex items-center gap-2">
               <div class="flex gap-1 flex-1">
                 <div v-for="i in 4" :key="i" class="flex-1 h-1 rounded-full transition-all"
@@ -235,7 +233,6 @@
               <span class="text-[10px] font-mono" :style="{ color: pwdStrength.color }">{{ pwdStrength.label }}</span>
             </div>
 
-            <!-- URL + Category -->
             <div class="grid grid-cols-2 gap-2">
               <div>
                 <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">URL (optional)</p>
@@ -257,7 +254,6 @@
               </div>
             </div>
 
-            <!-- Notes -->
             <div>
               <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">NOTES (optional)</p>
               <textarea v-model="form.notes" rows="2" placeholder="Additional notes…"
@@ -300,7 +296,7 @@
 import { ref, computed, reactive } from 'vue'
 import {
   ChevronLeft, Plus, Search, X, Eye, EyeOff,
-  Lock, Key, User, Copy, Pencil, Trash2, ShieldCheck,
+  Lock, Key, User, Pencil, Trash2, ShieldCheck,
 } from 'lucide-vue-next'
 import { settings, orbLog } from '../composables/useStore'
 import { useNav } from '../composables/useNav'
@@ -315,13 +311,8 @@ async function daemonSyncVault() {
   if (!daemonConnected.value || !vaultUnlocked.value) return
   await syncVault(
     entries.value.map(e => ({
-      id: e.id,
-      service: e.service,
-      username: e.username,
-      password: e.password,
-      category: e.category,
-      url: e.url,
-      notes: e.notes,
+      id: e.id, service: e.service, username: e.username, password: e.password,
+      category: e.category, url: e.url, notes: e.notes,
     }))
   ).catch(() => {})
 }
@@ -347,12 +338,11 @@ async function unlockVault() {
   const hash = await sha256(masterInput.value.trim())
   const stored = localStorage.getItem(VAULT_MASTER_KEY)
   if (!stored) {
-    // First time — set master
     localStorage.setItem(VAULT_MASTER_KEY, hash)
     hasMasterSet.value = true
     vaultUnlocked.value = true
     loadEntries()
-    orbLog('Vault master password set')
+    orbLog('Vault master password set (shared with ENV manager)')
   } else if (hash === stored) {
     vaultUnlocked.value = true
     loadEntries()
@@ -371,15 +361,8 @@ function lockVault() {
 
 // ── Entries ───────────────────────────────────────────────
 interface VaultEntry {
-  id:       number
-  service:  string
-  username: string
-  password: string
-  url:      string
-  category: string
-  notes:    string
-  favicon:  string
-  createdAt: string
+  id: number; service: string; username: string; password: string
+  url: string; category: string; notes: string; favicon: string; createdAt: string
 }
 
 const vaultCategories = ['work', 'personal', 'dev', 'finance', 'social']
@@ -392,23 +375,17 @@ function getFavicon(service: string): string {
     stripe: '💳', paypal: '💸', netflix: '📺', spotify: '🎵',
   }
   const key = service.toLowerCase()
-  for (const [k, v] of Object.entries(map)) {
-    if (key.includes(k)) return v
-  }
+  for (const [k, v] of Object.entries(map)) { if (key.includes(k)) return v }
   return service.slice(0, 1).toUpperCase()
 }
 
-const entries   = ref<VaultEntry[]>([])
+const entries     = ref<VaultEntry[]>([])
 const revealedIds = ref(new Set<number>())
 
 function loadEntries() {
-  try {
-    const r = localStorage.getItem(VAULT_KEY)
-    if (r) entries.value = JSON.parse(r)
-    else entries.value = []
-  } catch { entries.value = [] }
+  try { const r = localStorage.getItem(VAULT_KEY); if (r) entries.value = JSON.parse(r); else entries.value = [] }
+  catch { entries.value = [] }
 }
-
 function saveEntries() {
   try { localStorage.setItem(VAULT_KEY, JSON.stringify(entries.value)) } catch {}
 }
@@ -416,20 +393,20 @@ function saveEntries() {
 const search         = ref('')
 const activeCategory = ref('all')
 
-const filteredEntries = computed(() => {
-  return entries.value.filter(e => {
+const filteredEntries = computed(() =>
+  entries.value.filter(e => {
     const matchCat = activeCategory.value === 'all' || e.category === activeCategory.value
     const q = search.value.toLowerCase()
     const matchSearch = !q || e.service.toLowerCase().includes(q) || e.username.toLowerCase().includes(q)
     return matchCat && matchSearch
   })
-})
+)
 
 const vaultStats = computed(() => [
-  { label: 'entries',  value: entries.value.length,                                             color: accent.value },
-  { label: 'work',     value: entries.value.filter(e => e.category === 'work').length,          color: '#60a5fa' },
-  { label: 'personal', value: entries.value.filter(e => e.category === 'personal').length,      color: '#34d399' },
-  { label: 'dev',      value: entries.value.filter(e => e.category === 'dev').length,           color: '#a78bfa' },
+  { label: 'entries',  value: entries.value.length,                                        color: accent.value },
+  { label: 'work',     value: entries.value.filter(e => e.category === 'work').length,     color: '#60a5fa' },
+  { label: 'personal', value: entries.value.filter(e => e.category === 'personal').length, color: '#34d399' },
+  { label: 'dev',      value: entries.value.filter(e => e.category === 'dev').length,      color: '#a78bfa' },
 ])
 
 function toggleReveal(id: number) {
@@ -439,11 +416,9 @@ function toggleReveal(id: number) {
 
 function copyUsername(e: VaultEntry) {
   navigator.clipboard?.writeText(e.username).then(() => showToast(`copied: ${e.service} username`))
-  orbLog(`Vault: username copied for ${e.service}`)
 }
 function copyPassword(e: VaultEntry) {
   navigator.clipboard?.writeText(e.password).then(() => showToast(`copied: ${e.service} password`))
-  orbLog(`Vault: password copied for ${e.service}`)
 }
 
 // ── Add/Edit sheet ────────────────────────────────────────
@@ -451,9 +426,7 @@ const showSheet  = ref(false)
 const editTarget = ref<VaultEntry | null>(null)
 const showFormPwd = ref(false)
 
-const form = reactive({
-  service: '', username: '', password: '', url: '', category: 'personal', notes: '',
-})
+const form = reactive({ service: '', username: '', password: '', url: '', category: 'personal', notes: '' })
 
 function openAddSheet() {
   if (!vaultUnlocked.value) return
@@ -462,14 +435,12 @@ function openAddSheet() {
   showFormPwd.value = false
   showSheet.value = true
 }
-
 function editEntry(e: VaultEntry) {
   editTarget.value = e
   Object.assign(form, { service: e.service, username: e.username, password: e.password, url: e.url, category: e.category, notes: e.notes })
   showFormPwd.value = false
   showSheet.value = true
 }
-
 function closeSheet() { showSheet.value = false; editTarget.value = null }
 
 function saveEntry() {
@@ -479,30 +450,21 @@ function saveEntry() {
     if (e) Object.assign(e, { ...form, favicon: getFavicon(form.service) })
     orbLog(`Vault entry updated: ${form.service}`)
   } else {
-    entries.value.unshift({
-      id: Date.now(), ...form,
-      favicon: getFavicon(form.service),
-      createdAt: new Date().toISOString(),
-    })
+    entries.value.unshift({ id: Date.now(), ...form, favicon: getFavicon(form.service), createdAt: new Date().toISOString() })
     orbLog(`Vault entry added: ${form.service}`)
   }
-  saveEntries()
-  daemonSyncVault()
-  closeSheet()
+  saveEntries(); daemonSyncVault(); closeSheet()
   showToast(editTarget.value ? 'entry_updated' : 'entry_added')
 }
 
 function deleteEntry(id: number) {
   const e = entries.value.find(e => e.id === id)
   entries.value = entries.value.filter(e => e.id !== id)
-  saveEntries()
-  daemonSyncVault()
-  closeSheet()
+  saveEntries(); daemonSyncVault(); closeSheet()
   showToast(`deleted: ${e?.service}`)
-  orbLog(`Vault entry deleted: ${e?.service}`)
 }
 
-// ── Password generator ─────────────────────────────────────
+// ── Password generator ────────────────────────────────────
 function generatePassword() {
   const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*'
   form.password = Array.from(crypto.getRandomValues(new Uint8Array(20)))
@@ -511,14 +473,11 @@ function generatePassword() {
 }
 
 const pwdStrength = computed(() => {
-  const p = form.password
-  if (!p) return { level: 0, color: '#3f3f46', label: '' }
+  const p = form.password; if (!p) return { level: 0, color: '#3f3f46', label: '' }
   let score = 0
-  if (p.length >= 8)  score++
-  if (p.length >= 12) score++
+  if (p.length >= 8) score++; if (p.length >= 12) score++
   if (/[A-Z]/.test(p) && /[a-z]/.test(p)) score++
-  if (/[0-9]/.test(p)) score++
-  if (/[^A-Za-z0-9]/.test(p)) score++
+  if (/[0-9]/.test(p)) score++; if (/[^A-Za-z0-9]/.test(p)) score++
   if (score <= 1) return { level: 1, color: '#ef4444', label: 'weak' }
   if (score <= 2) return { level: 2, color: '#fb923c', label: 'fair' }
   if (score <= 3) return { level: 3, color: '#fbbf24', label: 'good' }
@@ -528,7 +487,6 @@ const pwdStrength = computed(() => {
 // ── Toast ─────────────────────────────────────────────────
 const toastMsg = ref('')
 let toastTimer: ReturnType<typeof setTimeout> | null = null
-
 function showToast(msg: string) {
   if (toastTimer) clearTimeout(toastTimer)
   toastMsg.value = msg

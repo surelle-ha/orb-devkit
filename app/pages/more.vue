@@ -19,8 +19,8 @@
         :class="['w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors active:bg-white/5',
           i < tools.length - 1 ? 'border-b border-white/5' : '']">
         <div class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-          :style="{ background: accent + '12', border: `1px solid ${accent}20` }">
-          <component :is="tool.icon" :size="19" :style="{ color: accent }" :stroke-width="1.8" />
+          :style="{ background: (tool.iconColor ?? accent) + '12', border: `1px solid ${(tool.iconColor ?? accent)}20` }">
+          <component :is="tool.icon" :size="19" :style="{ color: tool.iconColor ?? accent }" :stroke-width="1.8" />
         </div>
         <div class="flex-1 min-w-0">
           <p class="text-[14px] font-black font-mono text-zinc-100">{{ tool.label }}</p>
@@ -28,7 +28,7 @@
         </div>
         <div v-if="tool.badge"
           class="flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-black font-mono mr-1"
-          :style="{ background: accent + '18', color: accent }">
+          :style="{ background: (tool.iconColor ?? accent) + '18', color: tool.iconColor ?? accent }">
           {{ tool.badge }}
         </div>
         <ChevronRight :size="15" class="text-zinc-700 flex-shrink-0" :stroke-width="2" />
@@ -59,7 +59,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ChevronRight, Settings } from 'lucide-vue-next'
+import { ChevronRight, Settings, HelpCircle } from 'lucide-vue-next'
 import { settings } from '../composables/useStore'
 import { useNav }   from '../composables/useNav'
 
@@ -79,7 +79,22 @@ const orbCardCore = computed(() => ({
 }))
 
 const tools = [
-  { icon: Settings, label: 'Settings', sub: 'Preferences, security & advanced tools', page: 'settings' as const, badge: null },
+  {
+    icon: Settings,
+    label: 'Settings',
+    sub: 'Preferences, security & advanced tools',
+    page: 'settings' as const,
+    badge: null,
+    iconColor: null,
+  },
+  {
+    icon: HelpCircle,
+    label: 'FAQ',
+    sub: 'Frequently asked questions & guides',
+    page: 'faq' as const,
+    badge: null,
+    iconColor: '#60a5fa',
+  },
 ]
 </script>
 

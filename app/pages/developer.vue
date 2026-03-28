@@ -29,8 +29,6 @@
       </div>
     </div>
     <div class="mx-4 mb-4 rounded-2xl bg-zinc-950 border border-zinc-800 p-4">
-
-      <!-- Stat pills -->
       <div class="grid grid-cols-4 gap-2 mb-4">
         <div v-for="stat in perfStats" :key="stat.label"
           class="rounded-xl p-2.5 flex flex-col gap-0.5"
@@ -105,7 +103,7 @@
       </div>
 
       <p class="text-[9px] text-zinc-700 mt-3 leading-relaxed">
-        CPU estimated via JS task timing. Heap via performance.memory. GPU stats require Android profiler.
+        CPU estimated via JS task timing. Heap via performance.memory.
       </p>
     </div>
 
@@ -145,8 +143,7 @@
         <div v-if="connectionLogs.length === 0" class="text-zinc-600 py-3 text-center">No connection events yet</div>
         <div v-for="(log, i) in connectionLogs" :key="i" class="flex items-start gap-2 leading-relaxed">
           <span class="text-zinc-600 flex-shrink-0">{{ log.ts }}</span>
-          <span :class="['flex-shrink-0 font-bold w-8',
-            log.level==='error'?'text-rose-400':log.level==='warn'?'text-amber-400':'text-emerald-400']">{{ log.level[0].toUpperCase() }}</span>
+          <span :class="['flex-shrink-0 font-bold w-8', log.level==='error'?'text-rose-400':log.level==='warn'?'text-amber-400':'text-emerald-400']">{{ log.level[0].toUpperCase() }}</span>
           <span class="text-zinc-300 break-all">{{ log.msg }}</span>
         </div>
       </div>
@@ -158,9 +155,11 @@
     </div>
     <div class="mx-4 mb-4 rounded-2xl overflow-hidden bg-white/70 dark:bg-zinc-900/60 backdrop-blur border border-slate-200/60 dark:border-zinc-800/60 shadow-sm">
 
-      <button @click="handleReset" :disabled="busy"
+      <!-- Reset All Data — now shows confirmation overlay -->
+      <button @click="showResetConfirm = true" :disabled="busy"
         class="w-full flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 dark:border-zinc-800/60 active:bg-rose-50 dark:active:bg-rose-950/20 transition-colors disabled:opacity-50">
-        <div class="w-11 h-11 rounded-2xl bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center flex-shrink-0">
+        <div class="w-11 h-11 rounded-2xl bg-rose-50 dark:bg-rose-950/40 flex items-center justify-center flex-shrink-0"
+          style="border:1px solid rgba(239,68,68,0.2);">
           <RotateCcw :size="19" :class="['text-rose-500', busy ? 'animate-spin' : '']" :stroke-width="1.8" />
         </div>
         <div class="flex-1 min-w-0">
@@ -172,7 +171,8 @@
 
       <button @click="exportLogs"
         class="w-full flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 dark:border-zinc-800/60 active:bg-slate-50 dark:active:bg-zinc-800 transition-colors">
-        <div class="w-11 h-11 rounded-2xl bg-violet-50 dark:bg-violet-950/40 flex items-center justify-center flex-shrink-0">
+        <div class="w-11 h-11 rounded-2xl bg-violet-50 dark:bg-violet-950/40 flex items-center justify-center flex-shrink-0"
+          style="border:1px solid rgba(139,92,246,0.2);">
           <Download :size="19" class="text-violet-500" :stroke-width="1.8" />
         </div>
         <div class="flex-1 min-w-0">
@@ -183,7 +183,8 @@
 
       <button @click="clearLogs"
         class="w-full flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 dark:border-zinc-800/60 active:bg-slate-50 dark:active:bg-zinc-800 transition-colors">
-        <div class="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0">
+        <div class="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0"
+          style="border:1px solid rgba(255,255,255,0.06);">
           <Trash2 :size="19" class="text-slate-500 dark:text-zinc-400" :stroke-width="1.8" />
         </div>
         <div class="flex-1 min-w-0">
@@ -194,7 +195,8 @@
 
       <button @click="testIdleLock"
         class="w-full flex items-center gap-3 px-4 py-3.5 active:bg-amber-50 dark:active:bg-amber-950/20 transition-colors">
-        <div class="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center flex-shrink-0">
+        <div class="w-11 h-11 rounded-2xl bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center flex-shrink-0"
+          style="border:1px solid rgba(245,158,11,0.2);">
           <Lock :size="19" class="text-amber-500" :stroke-width="1.8" />
         </div>
         <div class="flex-1 min-w-0">
@@ -220,8 +222,7 @@
         <div v-if="persistedLogs.length === 0" class="text-zinc-600 text-[11px] font-mono py-2 text-center">No logs yet</div>
         <div v-for="(log, i) in persistedLogs" :key="i" class="flex items-start gap-2 text-[10px] font-mono leading-relaxed">
           <span class="text-zinc-600 flex-shrink-0">{{ log.ts }}</span>
-          <span :class="['flex-shrink-0 uppercase font-bold w-8',
-            log.level==='error'?'text-rose-400':log.level==='warn'?'text-amber-400':'text-emerald-400']">{{ log.level }}</span>
+          <span :class="['flex-shrink-0 uppercase font-bold w-8', log.level==='error'?'text-rose-400':log.level==='warn'?'text-amber-400':'text-emerald-400']">{{ log.level }}</span>
           <span class="text-zinc-300 break-all">{{ log.msg }}</span>
         </div>
       </div>
@@ -231,6 +232,56 @@
       <p v-for="line in resetOutput" :key="line" class="text-[10px] font-mono text-emerald-400 leading-relaxed">{{ line }}</p>
     </div>
   </div>
+
+  <!-- ══ RESET ALL DATA CONFIRMATION OVERLAY ══ -->
+  <Teleport to="body">
+    <Transition name="sheet">
+      <div v-if="showResetConfirm"
+        class="fixed inset-0 z-[500] flex items-end justify-center"
+        style="background:rgba(0,0,0,0.78);backdrop-filter:blur(16px);"
+        @click.self="showResetConfirm = false">
+        <div class="w-full max-w-[430px] rounded-t-[28px] border-t px-5 pt-5"
+          style="background:#150808;border-color:rgba(139,92,246,0.3);"
+          :style="{ paddingBottom:'calc(40px + env(safe-area-inset-bottom))' }">
+          <div class="w-10 h-1 rounded-full mx-auto mb-5" style="background:rgba(139,92,246,0.4)"></div>
+
+          <!-- Icon -->
+          <div class="flex justify-center mb-4">
+            <div class="w-16 h-16 rounded-2xl flex items-center justify-center"
+              style="background:linear-gradient(135deg,rgba(109,40,217,0.2),rgba(139,92,246,0.12));border:1px solid rgba(139,92,246,0.3)">
+              <RotateCcw :size="26" style="color:#a78bfa" :stroke-width="1.8" />
+            </div>
+          </div>
+
+          <p class="text-[18px] font-black text-center mb-2 text-zinc-100">Reset All Data?</p>
+          <p class="text-[13px] text-center leading-relaxed mb-3 text-zinc-500">
+            This will permanently erase all local data:
+          </p>
+
+          <!-- What gets deleted -->
+          <div class="flex flex-col gap-1.5 mb-5 px-2">
+            <div v-for="item in resetItems" :key="item" class="flex items-center gap-2.5">
+              <div class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:rgba(139,92,246,0.6)"></div>
+              <p class="text-[12px] font-mono text-zinc-500">{{ item }}</p>
+            </div>
+          </div>
+
+          <p class="text-[11px] font-mono text-purple-700 text-center mb-5">Cannot be undone. The app will reload after reset.</p>
+
+          <button @click="executeReset"
+            class="w-full py-4 rounded-2xl text-[16px] font-black active:scale-[0.98] mb-3 transition-all"
+            style="background:linear-gradient(135deg,#4c1d95,#7c3aed);color:white;box-shadow:0 8px 32px rgba(109,40,217,0.4)">
+            ⚠ Yes, Reset Everything
+          </button>
+          <button @click="showResetConfirm = false"
+            class="w-full py-3.5 rounded-2xl text-[15px] font-bold active:scale-[0.98] text-zinc-400"
+            style="background:rgba(139,92,246,0.08);">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 
   <!-- ══ STORAGE INSPECTOR MODAL ══ -->
   <Teleport to="body">
@@ -310,22 +361,49 @@ import {
   Settings2, Key, Copy, Lock, FileCode2, ShieldCheck, BrainCircuit,
 } from 'lucide-vue-next'
 import { useNav } from '../composables/useNav'
-import {
-  appLogs, orbLog,
-  SETTINGS_KEY,
-  settings,
-} from '../composables/useStore'
+import { appLogs, orbLog, settings } from '../composables/useStore'
 import { useDevControl } from '../composables/useDevControl'
 import { triggerLockNow } from '../composables/useIdleLock'
 
 const { navigate } = useNav()
 const { resetAll }  = useDevControl()
 
-const busy        = ref(false)
-const resetOutput = ref<string[]>([])
+const busy             = ref(false)
+const resetOutput      = ref<string[]>([])
+const showResetConfirm = ref(false)
 
 const idleLockEnabled = computed(() => settings.value.idleLockEnabled)
 const idleLockMinutes = computed(() => settings.value.idleLockMinutes)
+
+// Items shown in the reset confirmation modal
+const resetItems = [
+  'ENV projects & variables',
+  'Vault entries & master password',
+  'AI prompts & usage history',
+  'Focus session history & streak',
+  'Daemon pairing & device list',
+  'App settings & preferences',
+  'Developer logs',
+]
+
+// ── Actions ────────────────────────────────────────────────
+// Shows the confirmation overlay — does NOT reset directly
+function handleReset() {
+  showResetConfirm.value = true
+}
+
+// Called after user confirms in the overlay
+async function executeReset() {
+  showResetConfirm.value = false
+  busy.value = true
+  resetOutput.value = []
+  try {
+    resetOutput.value = await resetAll()
+    setTimeout(() => window.location.reload(), 1500)
+  } finally {
+    busy.value = false
+  }
+}
 
 // ── Persistent logs ────────────────────────────────────────
 const LOGS_STORAGE_KEY = 'orb_dev_logs_v1'
@@ -353,10 +431,10 @@ onMounted(() => { loadPersistedLogs(); appendToPersistedLogs(appLogs.value) })
 function clearLogs() { persistedLogs.value = []; appLogs.value.splice(0); savePersistedLogs() }
 
 // ── Connection logs filter ─────────────────────────────────
-const connectionLogs = computed(() => 
-  persistedLogs.value.filter(log => 
-    log.msg.includes('[Pairing]') || 
-    log.msg.includes('[Orb]') || 
+const connectionLogs = computed(() =>
+  persistedLogs.value.filter(log =>
+    log.msg.includes('[Pairing]') ||
+    log.msg.includes('[Orb]') ||
     log.msg.includes('daemon') ||
     log.msg.includes('WebSocket') ||
     log.msg.toLowerCase().includes('connect')
@@ -464,14 +542,14 @@ const perfStats = computed(() => [
   { label: 'Logs', value: String(persistedLogs.value.length), sub: 'entries', color: '#60a5fa' },
 ])
 
-// ── Storage inspector — DevKit keys only ───────────────────
+// ── Storage inspector ──────────────────────────────────────
 const LS_KEY_META = [
-  { key: SETTINGS_KEY,               label: 'App Settings',        icon: Settings2,   type: 'settings' },
-  { key: 'orb_env_vars_v1',          label: 'ENV Variables',       icon: FileCode2,   type: 'array'    },
-  { key: 'orb_vault_entries_v1',     label: 'Vault Entries',       icon: ShieldCheck, type: 'array'    },
-  { key: 'orb_prompts_v1',           label: 'AI Prompts',          icon: BrainCircuit,type: 'array'    },
-  { key: 'orb_pin_meta_v1',          label: 'PIN Metadata',        icon: Key,         type: 'settings' },
-  { key: 'orb_dev_logs_v1',          label: 'Dev Logs',            icon: Lock,        type: 'array'    },
+  { key: 'orb_settings_v1',        label: 'App Settings',  icon: Settings2,    type: 'settings' },
+  { key: 'orb_env_vars_v1',        label: 'ENV Variables', icon: FileCode2,    type: 'array'    },
+  { key: 'orb_vault_entries_v1',   label: 'Vault Entries', icon: ShieldCheck,  type: 'array'    },
+  { key: 'orb_prompts_v1',         label: 'AI Prompts',    icon: BrainCircuit, type: 'array'    },
+  { key: 'orb_pin_meta_v1',        label: 'PIN Metadata',  icon: Key,          type: 'settings' },
+  { key: 'orb_dev_logs_v1',        label: 'Dev Logs',      icon: Lock,         type: 'array'    },
 ]
 
 function getStorageRow(meta: typeof LS_KEY_META[0]) {
@@ -512,15 +590,7 @@ function copyRaw() {
   navigator.clipboard?.writeText(inspector.value.prettyRaw).then(() => orbLog('Raw JSON copied'))
 }
 
-// ── Actions ────────────────────────────────────────────────
-async function handleReset() {
-  busy.value = true; resetOutput.value = []
-  try {
-    resetOutput.value = await resetAll()
-    setTimeout(() => window.location.reload(), 1500)
-  } finally { busy.value = false }
-}
-
+// ── Other actions ──────────────────────────────────────────
 function testIdleLock() { orbLog('Dev: idle lock triggered manually'); triggerLockNow() }
 
 function exportLogs() {
@@ -532,6 +602,8 @@ function exportLogs() {
 </script>
 
 <style scoped>
-.sheet-enter-active,.sheet-leave-active { transition: opacity .3s ease; }
-.sheet-enter-from,.sheet-leave-to       { opacity: 0; }
+.sheet-enter-active, .sheet-leave-active { transition: opacity .3s ease; }
+.sheet-enter-from, .sheet-leave-to       { opacity: 0; }
+.sheet-enter-active > div, .sheet-leave-active > div { transition: transform .32s cubic-bezier(.32,1.1,.64,1); }
+.sheet-enter-from > div, .sheet-leave-to > div       { transform: translateY(100%); }
 </style>

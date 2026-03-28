@@ -38,6 +38,7 @@ export interface Settings {
   userName:         string
   balanceStyle:     'supreme' | 'minimal' | 'neon' | 'glass'
   customCategories: string[]
+  maxConnectedDevices: number
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -47,6 +48,7 @@ const DEFAULT_SETTINGS: Settings = {
   userName: '',
   balanceStyle: 'supreme',
   customCategories: [],
+  maxConnectedDevices: 3,    
 }
 
 function loadSettings(): Settings {
