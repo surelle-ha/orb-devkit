@@ -10,14 +10,6 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-          :style="{ background: daemonConnected ? '#10b98118' : '#ef444418', border: `1px solid ${daemonConnected ? '#10b98133' : '#ef444433'}` }">
-          <div :class="['w-1.5 h-1.5 rounded-full', daemonConnected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500']">
-          </div>
-          <span class="text-[10px] font-mono font-bold" :style="{ color: daemonConnected ? '#34d399' : '#f87171' }">
-            {{ daemonConnected ? `daemon · ${daemonLatency != null ? daemonLatency + 'ms' : 'live'}` : 'OFFLINE' }}
-          </span>
-        </div>
         <button @click="navigate('settings')"
           class="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
           style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);">
@@ -296,27 +288,6 @@
       </div>
     </div>
 
-    <!-- ── Dev Mode Status Card ── -->
-    <Transition name="slide-down">
-      <div v-if="devMode" class="mx-4 mb-4 rounded-2xl overflow-hidden"
-        :style="{ background: accent + '08', border: `1px solid ${accent}22` }">
-        <div class="flex items-center gap-3 px-4 py-3">
-          <div class="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-            :style="{ background: accent + '18', border: `1px solid ${accent}33` }">
-            <Code2 :size="15" :style="{ color: accent }" :stroke-width="2" />
-          </div>
-          <div class="flex-1 min-w-0">
-            <p class="text-[12px] font-mono font-bold" :style="{ color: accent }">dev_mode active</p>
-            <p class="text-[10px] font-mono text-zinc-600 mt-0.5">Hot reload · extended logs · debug overlays</p>
-          </div>
-          <div class="flex items-center gap-1.5 flex-shrink-0">
-            <div class="w-1.5 h-1.5 rounded-full animate-pulse" :style="{ background: accent }"></div>
-            <span class="text-[10px] font-mono font-bold" :style="{ color: accent }">{{ devSessionTime }}</span>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
     <!-- ── Dev Tools ── -->
     <div class="flex items-center justify-between px-5 pb-2">
       <p class="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">dev_tools</p>
@@ -326,17 +297,13 @@
       <!-- Pocket ENV -->
       <button @click="navigate('env')"
         class="devtool-card flex items-center gap-4 px-4 py-4 rounded-2xl active:scale-[0.98] transition-all"
-        style="background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.18);">
+        :style="{ background: `rgba(${accentRgb},0.07)`, border: `1px solid rgba(${accentRgb},0.18)` }">
         <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.25);">
-          <KeyRound :size="22" style="color:#34d399" :stroke-width="1.8" />
+          :style="{ background: `rgba(${accentRgb},0.12)`, border: `1px solid rgba(${accentRgb},0.25)` }">
+          <KeyRound :size="22" :style="{ color: accent }" :stroke-width="1.8" />
         </div>
         <div class="flex-1 min-w-0 text-left">
-          <div class="flex items-center gap-2 mb-0.5">
-            <p class="text-[15px] font-black text-zinc-100 font-mono">Pocket ENV</p>
-            <span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded"
-              style="background:rgba(16,185,129,0.15);color:#34d399;">NEW</span>
-          </div>
+          <p class="text-[15px] font-black text-zinc-100 font-mono mb-0.5">Pocket ENV</p>
           <p class="text-[11px] font-mono text-zinc-500 leading-snug">Store &amp; sync .env variables to VSCode via daemon</p>
         </div>
         <div class="flex-shrink-0 flex flex-col items-end gap-1">
@@ -354,7 +321,7 @@
       <!-- Password Manager -->
       <button @click="navigate('passwords')"
         class="devtool-card flex items-center gap-4 px-4 py-4 rounded-2xl active:scale-[0.98] transition-all"
-        :style="{ background: `rgba(${accentRgb},0.06)`, border: `1px solid rgba(${accentRgb},0.15)` }">
+        :style="{ background: `rgba(${accentRgb},0.07)`, border: `1px solid rgba(${accentRgb},0.18)` }">
         <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
           :style="{ background: `rgba(${accentRgb},0.12)`, border: `1px solid rgba(${accentRgb},0.25)` }">
           <ShieldCheck :size="22" :style="{ color: accent }" :stroke-width="1.8" />
@@ -369,25 +336,6 @@
         </div>
       </button>
 
-      <!-- Vibecode Therapy -->
-      <button @click="navigate('vibecode')"
-        class="devtool-card flex items-center gap-4 px-4 py-4 rounded-2xl active:scale-[0.98] transition-all"
-        style="background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.18);">
-        <div class="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style="background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.25);">
-          <Brain :size="22" style="color:#c084fc" :stroke-width="1.8" />
-        </div>
-        <div class="flex-1 min-w-0 text-left">
-          <div class="flex items-center gap-2 mb-0.5">
-            <p class="text-[15px] font-black text-zinc-100 font-mono">Vibecode Therapy</p>
-          </div>
-          <p class="text-[11px] font-mono text-zinc-500 leading-snug">Block all AI platforms · focus sessions</p>
-        </div>
-        <div class="flex-shrink-0 flex flex-col items-end gap-1">
-          <span class="text-[14px] font-black font-mono" style="color:#c084fc">{{ focusStreak }}🔥</span>
-          <span class="text-[9px] font-mono text-zinc-700">streak</span>
-        </div>
-      </button>
     </div>
 
     <div class="h-4"></div>
@@ -445,7 +393,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
-import { Settings, KeyRound, Code2, Brain, ShieldCheck } from 'lucide-vue-next'
+import { Settings, KeyRound, Code2, ShieldCheck } from 'lucide-vue-next'
 import { useNav } from '../composables/useNav'
 import { settings, orbLog } from '../composables/useStore'
 import { devMode, devSessionTime, toggleDevMode } from '../composables/useDevMode'
@@ -481,7 +429,7 @@ function executeDevToggle() {
   toggleDevMode()
 }
 
-// ── Twin Daemon Orb — tied to daemon connection AND dev mode ──
+// ── Twin Daemon Orb ───────────────────────────────────────
 const showTwinOrb = ref(false)
 let twinOrbTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -505,19 +453,6 @@ const vaultCount = computed(() => {
   try {
     const r = localStorage.getItem('orb_vault_entries_v1')
     return r ? JSON.parse(r).length : 0
-  } catch { return 0 }
-})
-
-const focusStreak = computed(() => {
-  try {
-    const r = localStorage.getItem('orb_vibecode_history_v1')
-    if (!r) return 0
-    const history = JSON.parse(r) as Array<{ completedAt: string }>
-    const days = new Set(history.map(s => new Date(s.completedAt).toDateString()))
-    let count = 0
-    const d = new Date()
-    while (days.has(d.toDateString())) { count++; d.setDate(d.getDate() - 1) }
-    return count
   } catch { return 0 }
 })
 
@@ -659,7 +594,4 @@ onUnmounted(() => { cancelAnimationFrame(animFrame); if (twinOrbTimer) clearTime
   60%  { transform:scale(1.4); opacity:1  }
   100% { transform:scale(3);   opacity:1  }
 }
-.slide-down-enter-active,.slide-down-leave-active { transition:all .28s ease; overflow:hidden; }
-.slide-down-enter-from,.slide-down-leave-to       { max-height:0; opacity:0; }
-.slide-down-enter-to,.slide-down-leave-from       { max-height:120px; opacity:1; }
 </style>
