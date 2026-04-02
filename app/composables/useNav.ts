@@ -2,10 +2,10 @@
 import { ref, readonly } from 'vue'
 
 export type PageId =
-  | 'home' | 'env' | 'grocery' | 'bills' | 'more'
-  | 'settings' | 'developer' | 'orb' | 'transactions'
-  | 'profile' | 'randomizer' | 'about'
-  | 'prompts' | 'passwords' | 'vibecode' | 'devices'
+  | 'home' | 'env' | 'more'
+  | 'settings' | 'developer' | 'orb'
+  | 'profile' | 'about'
+  | 'passwords' | 'devices'
   | 'faq'
 
 const TAB_ORDER: PageId[] = ['home', 'env', 'more', 'devices']

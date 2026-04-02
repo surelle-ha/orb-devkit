@@ -136,10 +136,9 @@ import Env       from '../pages/env.vue'
 import More      from '../pages/more.vue'
 import Settings  from '../pages/settings.vue'
 import Developer from '../pages/developer.vue'
-import Prompts   from '../pages/prompts.vue'
 import Passwords from '../pages/passwords.vue'
-import Vibecode  from '../pages/vibecode.vue'
 import Devices   from '../pages/devices.vue'
+import FAQ       from '../pages/faq.vue'
 
 const { activePage, transitionName, navigate, TAB_ORDER } = useNav()
 const accent      = computed(() => settings.value.accentColor)
@@ -158,8 +157,8 @@ const isTabPage = computed(() => !NO_NAV_PAGES.has(activePage.value))
 
 const PAGE_MAP: Record<string, any> = {
   home: Index, env: Env, more: More, settings: Settings,
-  developer: Developer, prompts: Prompts, passwords: Passwords,
-  vibecode: Vibecode, devices: Devices, about: More,
+  developer: Developer, passwords: Passwords,
+  faq: FAQ, devices: Devices, about: More,
 }
 const currentPage = computed(() => PAGE_MAP[activePage.value] ?? More)
 
