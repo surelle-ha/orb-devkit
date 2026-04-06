@@ -12,12 +12,14 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <div v-if="viewingDevice" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-          :style="viewingDevice.online
-            ? { background:'#10b98118', border:'1px solid #10b98133' }
-            : { background:'#ef444418', border:'1px solid #ef444433' }">
-          <div :class="['w-1.5 h-1.5 rounded-full', viewingDevice.online ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500']"></div>
-          <span class="text-[10px] font-mono font-bold" :style="{ color: viewingDevice.online ? '#34d399' : '#f87171' }">
+        <div v-if="viewingDevice" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full" :style="viewingDevice.online
+          ? { background: '#10b98118', border: '1px solid #10b98133' }
+          : { background: '#ef444418', border: '1px solid #ef444433' }">
+          <div
+            :class="['w-1.5 h-1.5 rounded-full', viewingDevice.online ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500']">
+          </div>
+          <span class="text-[10px] font-mono font-bold"
+            :style="{ color: viewingDevice.online ? '#34d399' : '#f87171' }">
             {{ viewingDevice.online ? 'LIVE' : 'OFFLINE' }}
           </span>
         </div>
@@ -65,10 +67,11 @@
         </button>
       </div>
 
-      <div v-else-if="!devices.length" class="mx-4 mb-4 rounded-3xl overflow-hidden relative py-10 flex flex-col items-center gap-5"
+      <div v-else-if="!devices.length"
+        class="mx-4 mb-4 rounded-3xl overflow-hidden relative py-10 flex flex-col items-center gap-5"
         style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);">
         <div class="absolute inset-0 pointer-events-none"
-          :style="{ background:`radial-gradient(ellipse at 50% 80%, ${accent}08 0%, transparent 70%)` }"></div>
+          :style="{ background: `radial-gradient(ellipse at 50% 80%, ${accent}08 0%, transparent 70%)` }"></div>
         <div class="relative">
           <div class="w-20 h-20 rounded-3xl flex items-center justify-center"
             :style="{ background: accent + '10', border: `1px solid ${accent}22` }">
@@ -82,7 +85,8 @@
         <div class="text-center px-8">
           <p class="text-[17px] font-black text-zinc-200">Waiting for devices…</p>
           <p class="text-[12px] font-mono text-zinc-600 mt-2 leading-relaxed">
-            Install the Orb daemon on your desktop<br>and run <span :style="{ color: accent }" class="font-bold">orb-daemon pair</span>
+            Install the Orb daemon on your desktop<br>and run <span :style="{ color: accent }"
+              class="font-bold">orb-daemon pair</span>
           </p>
         </div>
         <button @click.stop="showPairing = true"
@@ -98,18 +102,19 @@
           <p class="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">online</p>
         </div>
         <div class="flex flex-col gap-2.5 px-4 mb-3">
-          <button v-for="device in onlineDevices" :key="device.id"
-            @click="selectAndView(device.id)"
+          <button v-for="device in onlineDevices" :key="device.id" @click="selectAndView(device.id)"
             class="rounded-2xl overflow-hidden active:scale-[0.99] transition-all text-left"
             :style="{ background: accent + '06', border: `1px solid ${accent}22` }">
             <div class="flex items-center gap-3 px-4 py-4">
               <div class="relative flex-shrink-0" style="width:48px;height:48px;">
                 <div class="absolute inset-0 rounded-full"
-                  :style="{ border: `1px solid ${accent}55`, animation:'dev-spin-cw 8s linear infinite' }"></div>
+                  :style="{ border: `1px solid ${accent}55`, animation: 'dev-spin-cw 8s linear infinite' }"></div>
                 <div class="absolute rounded-full"
-                  :style="{ inset:'4px', background:'radial-gradient(circle at 38% 32%,#1a1a2e 0%,#09090b 60%,#000 100%)', boxShadow:`0 0 14px 3px ${accent}44, inset 0 0 12px rgba(0,0,0,0.9)` }"></div>
+                  :style="{ inset: '4px', background: 'radial-gradient(circle at 38% 32%,#1a1a2e 0%,#09090b 60%,#000 100%)', boxShadow: `0 0 14px 3px ${accent}44, inset 0 0 12px rgba(0,0,0,0.9)` }">
+                </div>
                 <div class="absolute rounded-full"
-                  :style="{ inset:'4px', background:`radial-gradient(circle at 28% 26%, ${accent}28 0%, transparent 55%)` }"></div>
+                  :style="{ inset: '4px', background: `radial-gradient(circle at 28% 26%, ${accent}28 0%, transparent 55%)` }">
+                </div>
                 <div class="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 animate-pulse"
                   style="border-color:#060810;"></div>
               </div>
@@ -133,17 +138,19 @@
           <p class="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">previously seen</p>
         </div>
         <div class="flex flex-col gap-2.5 px-4">
-          <div v-for="device in offlineDevices" :key="device.id"
-            class="rounded-2xl overflow-hidden"
+          <div v-for="device in offlineDevices" :key="device.id" class="rounded-2xl overflow-hidden"
             style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);">
             <div class="flex items-center gap-3 px-4 py-3.5">
               <div class="relative flex-shrink-0" style="width:40px;height:40px;">
                 <div class="absolute inset-0 rounded-full" style="border:1px solid rgba(255,255,255,0.08);"></div>
-                <div class="absolute rounded-full" style="inset:4px;background:radial-gradient(circle at 38% 32%,#18181b 0%,#09090b 60%,#000 100%);"></div>
+                <div class="absolute rounded-full"
+                  style="inset:4px;background:radial-gradient(circle at 38% 32%,#18181b 0%,#09090b 60%,#000 100%);">
+                </div>
               </div>
               <div class="flex-1 min-w-0">
                 <p class="text-[14px] font-black font-mono text-zinc-500">{{ device.name }}</p>
-                <p class="text-[11px] font-mono text-zinc-700 mt-0.5">Last seen {{ formatLastSeen(device.lastSeen) }}</p>
+                <p class="text-[11px] font-mono text-zinc-700 mt-0.5">Last seen {{ formatLastSeen(device.lastSeen) }}
+                </p>
               </div>
               <div class="flex items-center gap-2 flex-shrink-0">
                 <span class="text-[9px] font-mono font-bold px-2 py-1 rounded"
@@ -200,12 +207,12 @@
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-[12px] font-mono font-bold text-rose-300">daemon_disconnected</p>
-              <p class="text-[10px] font-mono text-rose-700 mt-0.5">Last seen {{ formatLastSeen(viewingDevice.lastSeen) }}</p>
+              <p class="text-[10px] font-mono text-rose-700 mt-0.5">Last seen {{ formatLastSeen(viewingDevice.lastSeen)
+              }}</p>
             </div>
             <!-- ✅ FIX: Reconnect button replaces just "back" -->
             <div class="flex items-center gap-2 flex-shrink-0">
-              <button @click="handleReconnect"
-                :disabled="reconnecting"
+              <button @click="handleReconnect" :disabled="reconnecting"
                 class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold active:scale-95 transition-all disabled:opacity-50"
                 :style="{ background: accent + '18', border: `1px solid ${accent}33`, color: accent }">
                 <RefreshCw :size="11" :stroke-width="2.5" :class="reconnecting ? 'animate-spin' : ''" />
@@ -226,15 +233,20 @@
         <div class="flex items-center gap-3 px-4 py-3.5">
           <div class="relative flex-shrink-0" style="width:44px;height:44px;">
             <div class="absolute inset-0 rounded-full"
-              :style="{ border:`1px solid ${viewingDevice.online ? accent + '55' : 'rgba(255,255,255,0.1)'}`, animation: viewingDevice.online ? 'dev-spin-cw 8s linear infinite' : 'none' }"></div>
+              :style="{ border: `1px solid ${viewingDevice.online ? accent + '55' : 'rgba(255,255,255,0.1)'}`, animation: viewingDevice.online ? 'dev-spin-cw 8s linear infinite' : 'none' }">
+            </div>
             <div class="absolute rounded-full"
-              :style="{ inset:'4px', background:'radial-gradient(circle at 38% 32%,#1a1a2e 0%,#09090b 60%,#000 100%)', boxShadow: viewingDevice.online ? `0 0 12px 3px ${accent}44, inset 0 0 10px rgba(0,0,0,0.9)` : 'none' }"></div>
+              :style="{ inset: '4px', background: 'radial-gradient(circle at 38% 32%,#1a1a2e 0%,#09090b 60%,#000 100%)', boxShadow: viewingDevice.online ? `0 0 12px 3px ${accent}44, inset 0 0 10px rgba(0,0,0,0.9)` : 'none' }">
+            </div>
             <div v-if="viewingDevice.online" class="absolute rounded-full"
-              :style="{ inset:'4px', background:`radial-gradient(circle at 28% 26%, ${accent}28 0%, transparent 55%)` }"></div>
+              :style="{ inset: '4px', background: `radial-gradient(circle at 28% 26%, ${accent}28 0%, transparent 55%)` }">
+            </div>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-[13px] font-black font-mono" :style="{ color: viewingDevice.online ? accent : '#71717a' }">{{ viewingDevice.name }}</p>
-            <p class="text-[10px] font-mono text-zinc-500 mt-0.5">{{ viewingDevice.os }} {{ viewingDevice.osVersion }} · {{ viewingDevice.ip }}:{{ viewingDevice.port }}</p>
+            <p class="text-[13px] font-black font-mono" :style="{ color: viewingDevice.online ? accent : '#71717a' }">{{
+              viewingDevice.name }}</p>
+            <p class="text-[10px] font-mono text-zinc-500 mt-0.5">{{ viewingDevice.os }} {{ viewingDevice.osVersion }} ·
+              {{ viewingDevice.ip }}:{{ viewingDevice.port }}</p>
           </div>
           <div v-if="viewingDevice.online" class="flex items-center gap-1.5">
             <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
@@ -252,16 +264,18 @@
 
       <template v-if="viewingDevice.online">
         <div class="grid grid-cols-2 gap-2.5 px-4 mb-4">
-          <div v-for="metric in topMetrics" :key="metric.label"
-            class="rounded-2xl px-4 py-3.5 relative overflow-hidden"
+          <div v-for="metric in topMetrics" :key="metric.label" class="rounded-2xl px-4 py-3.5 relative overflow-hidden"
             :style="{ background: metric.color + '0D', border: `1px solid ${metric.color}25` }">
             <div class="absolute top-0 right-0 w-16 h-16 pointer-events-none"
-              :style="{ background: `radial-gradient(circle at 80% 20%, ${metric.color}18 0%, transparent 70%)`, filter:'blur(8px)' }"></div>
+              :style="{ background: `radial-gradient(circle at 80% 20%, ${metric.color}18 0%, transparent 70%)`, filter: 'blur(8px)' }">
+            </div>
             <div class="flex items-center justify-between mb-1">
-              <span class="text-[9px] font-mono font-bold uppercase tracking-widest" :style="{ color: metric.color + '99' }">{{ metric.label }}</span>
+              <span class="text-[9px] font-mono font-bold uppercase tracking-widest"
+                :style="{ color: metric.color + '99' }">{{ metric.label }}</span>
               <component :is="metric.icon" :size="13" :style="{ color: metric.color + '88' }" :stroke-width="2" />
             </div>
-            <p class="text-[26px] font-black font-mono leading-none" :style="{ color: metric.color }">{{ metric.value }}</p>
+            <p class="text-[26px] font-black font-mono leading-none" :style="{ color: metric.color }">{{ metric.value }}
+            </p>
             <p class="text-[9px] font-mono mt-1" :style="{ color: metric.color + '66' }">{{ metric.sub }}</p>
             <div class="mt-2 h-1 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.06)">
               <div class="h-full rounded-full transition-all duration-1000"
@@ -277,7 +291,8 @@
         <div class="mx-4 mb-4 rounded-2xl bg-zinc-950 border border-zinc-800 p-4">
           <div class="grid grid-cols-4 gap-2 mb-4">
             <div v-for="(core, i) in coreUsage" :key="i" class="flex flex-col items-center gap-1.5">
-              <div class="w-full h-16 rounded-lg overflow-hidden flex items-end" style="background:rgba(255,255,255,0.04);">
+              <div class="w-full h-16 rounded-lg overflow-hidden flex items-end"
+                style="background:rgba(255,255,255,0.04);">
                 <div class="w-full rounded-t-sm transition-all duration-700"
                   :style="{ height: core + '%', background: coreColor(core) }"></div>
               </div>
@@ -287,9 +302,10 @@
           </div>
           <div class="relative h-12 rounded-xl overflow-hidden" style="background:rgba(255,255,255,0.03);">
             <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none" :viewBox="`0 0 ${GW} 48`">
-              <line v-for="y in [12,24,36]" :key="y" x1="0" :y1="y" :x2="GW" :y2="y" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+              <line v-for="y in [12, 24, 36]" :key="y" x1="0" :y1="y" :x2="GW" :y2="y" stroke="rgba(255,255,255,0.04)"
+                stroke-width="1" />
               <path :d="cpuFill" :fill="cpuColor + '22'" />
-              <path :d="cpuLine" :stroke="cpuColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+              <path :d="cpuLine" :stroke="cpuColor" stroke-width="1.5" fill="none" stroke-linejoin="round" />
             </svg>
             <span class="absolute top-1 left-2 text-[7px] font-mono text-zinc-700">100%</span>
             <span class="absolute bottom-1 left-2 text-[7px] font-mono text-zinc-700">0%</span>
@@ -298,12 +314,15 @@
 
         <div class="px-5 pb-2 flex items-center justify-between">
           <p class="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">memory</p>
-          <span class="text-[10px] font-mono font-bold text-violet-400">{{ simRam.toFixed(1) }}GB / {{ viewingDevice.ramGb }}GB</span>
+          <span class="text-[10px] font-mono font-bold text-violet-400">{{ simRam.toFixed(1) }}GB / {{
+            viewingDevice.ramGb }}GB</span>
         </div>
         <div class="mx-4 mb-4 rounded-2xl bg-zinc-950 border border-zinc-800 p-4">
           <div class="flex gap-1 h-3 rounded-full overflow-hidden mb-3">
-            <div class="h-full transition-all duration-700 rounded-l-full" :style="{ width: ramActP + '%', background: accent }"></div>
-            <div class="h-full transition-all duration-700" style="background:rgba(139,92,246,0.45);" :style="{ width: ramCacP + '%' }"></div>
+            <div class="h-full transition-all duration-700 rounded-l-full"
+              :style="{ width: ramActP + '%', background: accent }"></div>
+            <div class="h-full transition-all duration-700" style="background:rgba(139,92,246,0.45);"
+              :style="{ width: ramCacP + '%' }"></div>
             <div class="flex-1 h-full rounded-r-full" style="background:rgba(255,255,255,0.06);"></div>
           </div>
           <div class="flex items-center gap-4 text-[10px] font-mono">
@@ -317,7 +336,8 @@
             </div>
             <div class="flex items-center gap-1.5">
               <div class="w-2 h-2 rounded-sm" style="background:rgba(255,255,255,0.08)"></div>
-              <span class="text-zinc-500">Free <b class="text-zinc-200">{{ (viewingDevice.ramGb - simRam).toFixed(1) }}GB</b></span>
+              <span class="text-zinc-500">Free <b class="text-zinc-200">{{ (viewingDevice.ramGb - simRam).toFixed(1)
+                  }}GB</b></span>
             </div>
           </div>
         </div>
@@ -362,8 +382,7 @@
             <p class="text-[12px] font-mono text-zinc-700 mt-1">Start the daemon then reconnect</p>
           </div>
           <!-- ✅ FIX: Reconnect button in the body too -->
-          <button @click="handleReconnect"
-            :disabled="reconnecting"
+          <button @click="handleReconnect" :disabled="reconnecting"
             class="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-mono font-bold active:scale-95 disabled:opacity-50"
             :style="{ background: accent + '18', border: `1px solid ${accent}33`, color: accent }">
             <RefreshCw :size="15" :stroke-width="2" :class="reconnecting ? 'animate-spin' : ''" />
@@ -385,9 +404,7 @@
   <!-- Pair daemon modal -->
   <Teleport to="body">
     <Transition name="sheet">
-      <div v-if="showPairing"
-        class="fixed inset-0 z-[300] overflow-y-auto"
-        style="background:#060810;">
+      <div v-if="showPairing" class="fixed inset-0 z-[300] overflow-y-auto" style="background:#060810;">
         <PairDaemon @close="showPairing = false" />
       </div>
     </Transition>
@@ -396,13 +413,12 @@
   <!-- Device Actions Sheet -->
   <Teleport to="body">
     <Transition name="sheet-fade">
-      <div v-if="showDeviceActions"
-        class="fixed inset-0 z-[400] flex items-end justify-center"
-        style="background:rgba(0,0,0,0.75);backdrop-filter:blur(14px);"
-        @click.self="showDeviceActions = false">
+      <div v-if="showDeviceActions" class="fixed inset-0 z-[400] flex items-end justify-center"
+        style="background:rgba(0,0,0,0.75);backdrop-filter:blur(14px);" @click.self="showDeviceActions = false">
         <div class="w-full max-w-[430px] rounded-t-[28px] border-t px-5 pt-5"
           style="background:#0e0b1e;border-color:rgba(239,68,68,0.25);"
-          :style="{ paddingBottom:'calc(40px + env(safe-area-inset-bottom))' }">
+          :style="[{ paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' }, actionsSheetStyle]"
+          @touchstart="actionsTouchStart" @touchmove="actionsTouchMove" @touchend="actionsTouchEnd">
           <div class="w-10 h-1 rounded-full mx-auto mb-5" style="background:rgba(239,68,68,0.3)"></div>
 
           <div class="flex items-center gap-3 mb-5 px-1">
@@ -457,13 +473,12 @@
   <!-- Unpair Confirmation -->
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="confirmUnpairTarget"
-        class="fixed inset-0 z-[500] flex items-end justify-center"
-        style="background:rgba(0,0,0,0.8);backdrop-filter:blur(16px);"
-        @click.self="confirmUnpairTarget = null">
+      <div v-if="confirmUnpairTarget" class="fixed inset-0 z-[500] flex items-end justify-center"
+        style="background:rgba(0,0,0,0.8);backdrop-filter:blur(16px);" @click.self="confirmUnpairTarget = null">
         <div class="w-full max-w-[430px] rounded-t-[28px] border-t px-5 pt-5"
           style="background:#150808;border-color:rgba(239,68,68,0.3);"
-          :style="{ paddingBottom:'calc(40px + env(safe-area-inset-bottom))' }">
+          :style="[{ paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' }, unpairSheetStyle]"
+          @touchstart="unpairTouchStart" @touchmove="unpairTouchMove" @touchend="unpairTouchEnd">
           <div class="w-10 h-1 rounded-full mx-auto mb-5" style="background:rgba(239,68,68,0.4)"></div>
           <div class="flex justify-center mb-4">
             <div class="w-16 h-16 rounded-2xl flex items-center justify-center"
@@ -473,11 +488,12 @@
           </div>
           <p class="text-[18px] font-black text-center mb-2 text-zinc-100">Unpair device?</p>
           <p class="text-[13px] text-center leading-relaxed mb-2 text-zinc-500">
-            <span class="text-zinc-300 font-bold">{{ confirmUnpairTarget?.name }}</span> will be removed. The daemon's data will be reset and you'll need to run <span class="text-rose-400 font-bold">orb-daemon pair</span> again.
+            <span class="text-zinc-300 font-bold">{{ confirmUnpairTarget?.name }}</span> will be removed. The daemon's
+            data will be reset and you'll need to run <span class="text-rose-400 font-bold">orb-daemon pair</span>
+            again.
           </p>
           <p class="text-[11px] font-mono text-rose-700 text-center mb-6">This cannot be undone.</p>
-          <button @click="executeUnpair"
-            class="w-full py-4 rounded-2xl text-[16px] font-black active:scale-[0.98] mb-3"
+          <button @click="executeUnpair" class="w-full py-4 rounded-2xl text-[16px] font-black active:scale-[0.98] mb-3"
             style="background:rgba(239,68,68,0.85);color:white;box-shadow:0 8px 28px rgba(239,68,68,0.3);">
             Yes, unpair
           </button>
@@ -505,6 +521,7 @@ import { devices, onlineDevices, removeDevice, type Device } from '../composable
 import { useNav } from '../composables/useNav'
 import { useDaemon } from '../composables/useDaemon'
 import PairDaemon from '~/components/PairDaemon.vue'
+import { useSwipeDown } from '~/composables/useSwipeDown'
 
 const accent = computed(() => settings.value.accentColor)
 const { navParams } = useNav()
@@ -512,6 +529,8 @@ const showPairing = ref(false)
 const showDeviceActions = ref(false)
 const confirmUnpairTarget = ref<Device | null>(null)
 const reconnecting = ref(false)
+const { sheetStyle: actionsSheetStyle, onTouchStart: actionsTouchStart, onTouchMove: actionsTouchMove, onTouchEnd: actionsTouchEnd } = useSwipeDown(() => { showDeviceActions.value = false })
+const { sheetStyle: unpairSheetStyle, onTouchStart: unpairTouchStart, onTouchMove: unpairTouchMove, onTouchEnd: unpairTouchEnd } = useSwipeDown(() => { confirmUnpairTarget.value = null })
 
 const { disconnect: daemonDisconnect, resetDaemon, connect: daemonConnect } = useDaemon()
 
@@ -574,127 +593,178 @@ async function executeUnpair() {
 
 // ── Features list ────────────────────────────────────────
 const features = [
-  { icon: Cpu,         label: 'CPU Usage',   sub: 'Per-core utilization & frequency', color: '#34d399' },
-  { icon: MemoryStick, label: 'Memory',      sub: 'Active, cached & free RAM',        color: '#8b5cf6' },
-  { icon: Activity,    label: 'Processes',   sub: 'Top CPU & memory consumers',       color: '#60a5fa' },
-  { icon: ArrowDown,   label: 'Network I/O', sub: 'Real-time bandwidth monitor',      color: '#34d399' },
-  { icon: HardDrive,   label: 'Disk I/O',    sub: 'Read/write throughput',            color: '#fb923c' },
+  { icon: Cpu, label: 'CPU Usage', sub: 'Per-core utilization & frequency', color: '#34d399' },
+  { icon: MemoryStick, label: 'Memory', sub: 'Active, cached & free RAM', color: '#8b5cf6' },
+  { icon: Activity, label: 'Processes', sub: 'Top CPU & memory consumers', color: '#60a5fa' },
+  { icon: ArrowDown, label: 'Network I/O', sub: 'Real-time bandwidth monitor', color: '#34d399' },
+  { icon: HardDrive, label: 'Disk I/O', sub: 'Read/write throughput', color: '#fb923c' },
 ]
 
 const deviceSpecs = computed(() => {
   if (!viewingDevice.value) return []
   const d = viewingDevice.value
   return [
-    { label: 'CPU',  value: d.cores + ' cores' },
-    { label: 'RAM',  value: d.ramGb + ' GB'    },
-    { label: 'NET',  value: d.online ? 'live' : 'offline' },
+    { label: 'CPU', value: d.cores + ' cores' },
+    { label: 'RAM', value: d.ramGb + ' GB' },
+    { label: 'NET', value: d.online ? 'live' : 'offline' },
   ]
 })
 
 // ── Simulation ───────────────────────────────────────────
 const GW = 60
-const simCpu  = ref(0)
-const simRam  = ref(0)
+const simCpu = ref(0)
+const simRam = ref(0)
 const netDown = ref('0.0')
-const netUp   = ref('0.0')
-const coreUsage = ref<number[]>([0,0,0,0,0,0,0,0])
-const cpuHist   = ref<number[]>([])
+const netUp = ref('0.0')
+const coreUsage = ref<number[]>([0, 0, 0, 0, 0, 0, 0, 0])
+const cpuHist = ref<number[]>([])
 
 function pushH(arr: typeof cpuHist, v: number) {
-  arr.value = [...arr.value.slice(-(GW-1)), v]
+  arr.value = [...arr.value.slice(-(GW - 1)), v]
 }
 
 function buildPath(vals: number[], max: number, h: number, fill: boolean) {
   if (vals.length < 2) return ''
   const pts = vals.map((v, i) => {
-    const x = (i / (GW-1)) * GW
-    const y = h - (Math.min(v,max) / max * h)
+    const x = (i / (GW - 1)) * GW
+    const y = h - (Math.min(v, max) / max * h)
     return `${x.toFixed(1)},${y.toFixed(1)}`
   })
   const line = 'M ' + pts.join(' L ')
   if (!fill) return line
-  const fx = pts[0].split(',')[0], lx = pts[pts.length-1].split(',')[0]
+  const fx = pts[0].split(',')[0], lx = pts[pts.length - 1].split(',')[0]
   return line + ` L ${lx},${h} L ${fx},${h} Z`
 }
 
 const cpuColor = computed(() => simCpu.value > 70 ? '#f87171' : simCpu.value > 45 ? '#fb923c' : '#34d399')
-const cpuLine  = computed(() => buildPath(cpuHist.value, 100, 48, false))
-const cpuFill  = computed(() => buildPath(cpuHist.value, 100, 48, true))
-const ramActP  = computed(() => (simRam.value * 0.55 / (viewingDevice.value?.ramGb ?? 32)) * 100)
-const ramCacP  = computed(() => (simRam.value * 0.30 / (viewingDevice.value?.ramGb ?? 32)) * 100)
+const cpuLine = computed(() => buildPath(cpuHist.value, 100, 48, false))
+const cpuFill = computed(() => buildPath(cpuHist.value, 100, 48, true))
+const ramActP = computed(() => (simRam.value * 0.55 / (viewingDevice.value?.ramGb ?? 32)) * 100)
+const ramCacP = computed(() => (simRam.value * 0.30 / (viewingDevice.value?.ramGb ?? 32)) * 100)
 function coreColor(v: number) { return v > 70 ? '#f87171' : v > 45 ? '#fb923c' : '#34d399' }
 
 const topMetrics = computed(() => {
   const d = viewingDevice.value
   if (!d) return []
   return [
-    { label:'CPU', icon:Cpu, value:simCpu.value+'%', sub:`${d.cores} cores`, pct:simCpu.value, color:cpuColor.value },
-    { label:'RAM', icon:MemoryStick, value:simRam.value.toFixed(1)+'G', sub:`of ${d.ramGb}GB used`, pct:(simRam.value/d.ramGb)*100, color:'#8b5cf6' },
-    { label:'DOWN', icon:ArrowDown, value:netDown.value, sub:'MB/s download', pct:Math.min(100,parseFloat(netDown.value)*10), color:'#34d399' },
-    { label:'UP', icon:ArrowUp, value:netUp.value, sub:'MB/s upload', pct:Math.min(100,parseFloat(netUp.value)*20), color:accent.value },
+    { label: 'CPU', icon: Cpu, value: simCpu.value + '%', sub: `${d.cores} cores`, pct: simCpu.value, color: cpuColor.value },
+    { label: 'RAM', icon: MemoryStick, value: simRam.value.toFixed(1) + 'G', sub: `of ${d.ramGb}GB used`, pct: (simRam.value / d.ramGb) * 100, color: '#8b5cf6' },
+    { label: 'DOWN', icon: ArrowDown, value: netDown.value, sub: 'MB/s download', pct: Math.min(100, parseFloat(netDown.value) * 10), color: '#34d399' },
+    { label: 'UP', icon: ArrowUp, value: netUp.value, sub: 'MB/s upload', pct: Math.min(100, parseFloat(netUp.value) * 20), color: accent.value },
   ]
 })
 
 let simTimer: ReturnType<typeof setInterval> | null = null
-let cpuT=35, ramT=18, ndT=1.2, nuT=0.4, tick=0
+let cpuT = 35, ramT = 18, ndT = 1.2, nuT = 0.4, tick = 0
 
-function lerp(a:number,b:number,t:number){return Math.round(a+(b-a)*t)}
-function simTick(){
+function lerp(a: number, b: number, t: number) { return Math.round(a + (b - a) * t) }
+function simTick() {
   tick++
-  if(tick%4===0){
-    cpuT=Math.max(5,Math.min(88,cpuT+(Math.random()-0.45)*14))
-    ndT=Math.max(0.1,Math.min(9,ndT+(Math.random()-0.5)*1.4))
-    nuT=Math.max(0.1,Math.min(5,nuT+(Math.random()-0.5)*0.7))
+  if (tick % 4 === 0) {
+    cpuT = Math.max(5, Math.min(88, cpuT + (Math.random() - 0.45) * 14))
+    ndT = Math.max(0.1, Math.min(9, ndT + (Math.random() - 0.5) * 1.4))
+    nuT = Math.max(0.1, Math.min(5, nuT + (Math.random() - 0.5) * 0.7))
   }
-  if(tick%8===0){
-    const rMax=viewingDevice.value?.ramGb??32
-    ramT=Math.max(4,Math.min(rMax*0.88,ramT+(Math.random()-0.4)*1.8))
+  if (tick % 8 === 0) {
+    const rMax = viewingDevice.value?.ramGb ?? 32
+    ramT = Math.max(4, Math.min(rMax * 0.88, ramT + (Math.random() - 0.4) * 1.8))
   }
-  simCpu.value=lerp(simCpu.value,cpuT,0.3)
-  simRam.value=parseFloat((simRam.value+(ramT-simRam.value)*0.1).toFixed(1))
-  netDown.value=(ndT+(Math.random()-0.5)*0.3).toFixed(1)
-  netUp.value=(nuT+(Math.random()-0.5)*0.2).toFixed(1)
-  coreUsage.value=coreUsage.value.map((c,i)=>lerp(c,Math.max(1,Math.min(96,cpuT+(Math.random()-0.5)*28+(i%3===0?8:-4))),0.35))
-  pushH(cpuHist,simCpu.value)
+  simCpu.value = lerp(simCpu.value, cpuT, 0.3)
+  simRam.value = parseFloat((simRam.value + (ramT - simRam.value) * 0.1).toFixed(1))
+  netDown.value = (ndT + (Math.random() - 0.5) * 0.3).toFixed(1)
+  netUp.value = (nuT + (Math.random() - 0.5) * 0.2).toFixed(1)
+  coreUsage.value = coreUsage.value.map((c, i) => lerp(c, Math.max(1, Math.min(96, cpuT + (Math.random() - 0.5) * 28 + (i % 3 === 0 ? 8 : -4))), 0.35))
+  pushH(cpuHist, simCpu.value)
 }
 
-function startSim(){
+function startSim() {
   stopSim()
-  const d=viewingDevice.value
-  if(!d||!d.online)return
-  simCpu.value=30;simRam.value=d.ramGb*0.52
-  coreUsage.value=Array.from({length:d.cores},()=>Math.round(20+Math.random()*40))
-  simTimer=setInterval(simTick,1000)
+  const d = viewingDevice.value
+  if (!d || !d.online) return
+  simCpu.value = 30; simRam.value = d.ramGb * 0.52
+  coreUsage.value = Array.from({ length: d.cores }, () => Math.round(20 + Math.random() * 40))
+  simTimer = setInterval(simTick, 1000)
   orbLog(`Monitoring ${d.name} (simulated)`)
 }
-function stopSim(){
-  if(simTimer){clearInterval(simTimer);simTimer=null}
+function stopSim() {
+  if (simTimer) { clearInterval(simTimer); simTimer = null }
 }
 
-watch(viewingDeviceId,(id)=>{
+watch(viewingDeviceId, (id) => {
   stopSim()
-  cpuHist.value=[]
-  if(id&&devices.value.find(d=>d.id===id)?.online)startSim()
-},{immediate:true})
+  cpuHist.value = []
+  if (id && devices.value.find(d => d.id === id)?.online) startSim()
+}, { immediate: true })
 
-watch(()=>viewingDevice.value?.online,(online)=>{
-  if(!online)stopSim()
-  else if(viewingDeviceId.value)startSim()
+watch(() => viewingDevice.value?.online, (online) => {
+  if (!online) stopSim()
+  else if (viewingDeviceId.value) startSim()
 })
 
 onUnmounted(stopSim)
 </script>
 
 <style scoped>
-.devkit-root { background:#060810; min-height:100%; }
-@keyframes dev-spin-cw { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-.sheet-enter-active,.sheet-leave-active{transition:opacity .3s ease;}
-.sheet-enter-from,.sheet-leave-to{opacity:0;}
-.sheet-fade-enter-active,.sheet-fade-leave-active{transition:opacity .25s ease;}
-.sheet-fade-enter-from,.sheet-fade-leave-to{opacity:0;}
-.fade-enter-active,.fade-leave-active{transition:opacity .25s ease;}
-.fade-enter-from,.fade-leave-to{opacity:0;}
-.slide-down-enter-active,.slide-down-leave-active{transition:all .28s ease;overflow:hidden;}
-.slide-down-enter-from,.slide-down-leave-to{max-height:0;opacity:0;}
-.slide-down-enter-to,.slide-down-leave-from{max-height:80px;opacity:1;}
+.devkit-root {
+  background: #060810;
+  min-height: 100%;
+}
+
+@keyframes dev-spin-cw {
+  from {
+    transform: rotate(0deg)
+  }
+
+  to {
+    transform: rotate(360deg)
+  }
+}
+
+.sheet-enter-active,
+.sheet-leave-active {
+  transition: opacity .3s ease;
+}
+
+.sheet-enter-from,
+.sheet-leave-to {
+  opacity: 0;
+}
+
+.sheet-fade-enter-active,
+.sheet-fade-leave-active {
+  transition: opacity .25s ease;
+}
+
+.sheet-fade-enter-from,
+.sheet-fade-leave-to {
+  opacity: 0;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity .25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all .28s ease;
+  overflow: hidden;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  max-height: 0;
+  opacity: 0;
+}
+
+.slide-down-enter-to,
+.slide-down-leave-from {
+  max-height: 80px;
+  opacity: 1;
+}
 </style>

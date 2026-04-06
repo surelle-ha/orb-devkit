@@ -1,28 +1,30 @@
 <template>
   <div class="devkit-root pb-28" style="touch-action:pan-y;">
 
-    <!-- Header -->
-    <div class="flex items-center gap-3 px-5 pt-6 pb-4">
-      <button @click="navigate('more')"
-        class="w-9 h-9 rounded-2xl flex items-center justify-center active:scale-90 transition-transform"
-        style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">
-        <ChevronLeft :size="18" class="text-zinc-300" :stroke-width="2.5" />
-      </button>
-      <div class="flex-1">
-        <p class="text-[10px] font-mono text-zinc-600 tracking-[0.25em] uppercase">orb devkit / security</p>
-        <h1 class="text-[22px] font-black text-zinc-50 tracking-tight mt-0.5 font-mono">
-          <span :style="{ color: accent }">›</span> vault
-        </h1>
+    <!-- Header — only shown when unlocked -->
+    <template v-if="vaultUnlocked">
+      <div class="flex items-center gap-3 px-5 pt-6 pb-4">
+        <button @click="navigate('more')"
+          class="w-9 h-9 rounded-2xl flex items-center justify-center active:scale-90 transition-transform"
+          style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);">
+          <ChevronLeft :size="18" class="text-zinc-300" :stroke-width="2.5" />
+        </button>
+        <div class="flex-1">
+          <p class="text-[10px] font-mono text-zinc-600 tracking-[0.25em] uppercase">orb devkit / security</p>
+          <h1 class="text-[22px] font-black text-zinc-50 tracking-tight mt-0.5 font-mono">
+            <span :style="{ color: accent }">›</span> vault
+          </h1>
+        </div>
+        <button @click="openAddSheet"
+          class="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
+          :style="{ background: accent + '18', border: `1px solid ${accent}33` }">
+          <Plus :size="17" :style="{ color: accent }" :stroke-width="2" />
+        </button>
       </div>
-      <button @click="openAddSheet"
-        class="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
-        :style="{ background: accent + '18', border: `1px solid ${accent}33` }">
-        <Plus :size="17" :style="{ color: accent }" :stroke-width="2" />
-      </button>
-    </div>
+    </template>
 
-    <!-- Shared vault lock layout -->
-    <div v-if="!vaultUnlocked" class="flex flex-col items-center justify-center min-h-[80dvh] px-8 gap-6">
+    <!-- Lock screen — matches ENV manager layout exactly -->
+    <div v-if="!vaultUnlocked" class="flex flex-col items-center justify-center min-h-[100dvh] px-8 gap-6">
       <div class="relative">
         <div class="w-20 h-20 rounded-3xl flex items-center justify-center"
           :style="{ background: accent + '18', border: `1px solid ${accent}33` }">
@@ -33,6 +35,7 @@
           <Lock :size="11" style="color:#000" :stroke-width="3" />
         </div>
       </div>
+
       <div class="text-center">
         <p class="text-[10px] font-mono text-zinc-600 tracking-[0.25em] uppercase mb-1">orb devkit / security</p>
         <h1 class="text-[22px] font-black text-zinc-50 tracking-tight font-mono">
@@ -42,6 +45,7 @@
           Shared vault password required.<br>Same password as your ENV manager.
         </p>
       </div>
+
       <div class="w-full max-w-[340px] flex flex-col gap-3">
         <div class="flex items-center gap-2 rounded-2xl px-4 py-3.5"
           :class="unlockError ? 'border-2 border-rose-500/60 bg-rose-950/20' : ''"
@@ -81,8 +85,7 @@
           class="flex-shrink-0 flex flex-col gap-0.5 px-3.5 py-2.5 rounded-2xl"
           :style="{ background: stat.color + '12', border: `1px solid ${stat.color}25` }">
           <span class="text-[18px] font-black font-mono" :style="{ color: stat.color }">{{ stat.value }}</span>
-          <span class="text-[9px] font-mono uppercase tracking-widest" :style="{ color: stat.color + '88' }">{{
-            stat.label }}</span>
+          <span class="text-[9px] font-mono uppercase tracking-widest" :style="{ color: stat.color + '88' }">{{ stat.label }}</span>
         </div>
         <button @click="lockVault"
           class="flex-shrink-0 flex flex-col items-center justify-center gap-0.5 px-3.5 py-2.5 rounded-2xl active:scale-95 transition-all"
@@ -177,14 +180,15 @@
     <div class="h-4"></div>
   </div>
 
-  <!-- Add/Edit Sheet -->
+  <!-- Add/Edit Sheet — swipe down to close -->
   <Teleport to="body">
     <Transition name="sheet">
       <div v-if="showSheet && vaultUnlocked" class="fixed inset-0 z-[200] flex items-end justify-center"
         style="background:rgba(0,0,0,0.75);backdrop-filter:blur(14px);" @click.self="closeSheet">
         <div class="w-full max-w-[430px] rounded-t-[28px] border-t overflow-hidden"
           style="background:#0c0c18;border-color:rgba(255,255,255,0.08);"
-          :style="{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))' }">
+          :style="[{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))' }, sheetStyle]"
+          @touchstart="onTouchStart" @touchmove="onTouchMove" @touchend="onTouchEnd">
           <div class="flex flex-col gap-3 px-5 pt-4 max-h-[88vh] overflow-y-auto pb-2">
             <div class="w-10 h-1 rounded-full self-center mb-1" style="background:rgba(255,255,255,0.08)"></div>
             <p class="text-[16px] font-black font-mono text-center text-zinc-100">
@@ -192,17 +196,14 @@
             </p>
 
             <div>
-              <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">SERVICE /
-                SITE
-              </p>
+              <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">SERVICE / SITE</p>
               <input v-model="form.service" placeholder="e.g. GitHub"
                 class="w-full rounded-xl px-4 py-3 text-[13px] font-mono font-bold text-zinc-100 placeholder:text-zinc-700 outline-none"
                 style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);" />
             </div>
 
             <div>
-              <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">USERNAME /
-                EMAIL</p>
+              <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">USERNAME / EMAIL</p>
               <input v-model="form.username" placeholder="you@example.com" autocomplete="off"
                 class="w-full rounded-xl px-4 py-3 text-[13px] font-mono text-zinc-100 placeholder:text-zinc-700 outline-none"
                 style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);" />
@@ -239,15 +240,13 @@
 
             <div class="grid grid-cols-2 gap-2">
               <div>
-                <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">URL
-                  (optional)</p>
+                <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">URL (optional)</p>
                 <input v-model="form.url" placeholder="https://…"
                   class="w-full rounded-xl px-4 py-3 text-[12px] font-mono text-zinc-100 placeholder:text-zinc-700 outline-none"
                   style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);" />
               </div>
               <div>
-                <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">CATEGORY
-                </p>
+                <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">CATEGORY</p>
                 <div class="flex flex-col gap-1">
                   <button v-for="c in vaultCategories" :key="c" @click="form.category = c"
                     class="px-3 py-2 rounded-lg text-[11px] font-mono font-bold transition-all text-left"
@@ -261,8 +260,7 @@
             </div>
 
             <div>
-              <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">NOTES
-                (optional)</p>
+              <p class="text-[9px] font-mono font-bold text-zinc-600 uppercase tracking-widest mb-1.5 px-1">NOTES (optional)</p>
               <textarea v-model="form.notes" rows="2" placeholder="Additional notes…"
                 class="w-full rounded-xl px-4 py-3 text-[12px] font-mono text-zinc-100 placeholder:text-zinc-700 outline-none resize-none"
                 style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);" />
@@ -307,10 +305,13 @@ import {
 import { settings, orbLog } from '../composables/useStore'
 import { useNav } from '../composables/useNav'
 import { useDaemon } from '~/composables/useDaemon'
+import { useSwipeDown } from '~/composables/useSwipeDown'
 
 const { navigate } = useNav()
 const accent = computed(() => settings.value.accentColor)
 const { connected: daemonConnected, syncVault } = useDaemon()
+
+const { sheetStyle, onTouchStart, onTouchMove, onTouchEnd } = useSwipeDown(() => closeSheet())
 
 async function daemonSyncVault() {
   if (!daemonConnected.value || !vaultUnlocked.value) return
