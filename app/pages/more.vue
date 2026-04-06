@@ -46,11 +46,6 @@
         <p class="text-[14px] font-black font-mono text-zinc-100">Orb Tech</p>
         <p class="text-[11px] font-mono text-zinc-600">Developer Toolkit · v1.0</p>
       </div>
-      <div class="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl"
-        :style="{ background: accent + '12', border: `1px solid ${accent}22` }">
-        <div class="w-1.5 h-1.5 rounded-full" :style="{ background: accent }"></div>
-        <span class="text-[10px] font-mono font-bold" :style="{ color: accent }">active</span>
-      </div>
     </div>
 
     <div class="h-4"></div>

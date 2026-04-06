@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-slate-100 dark:bg-zinc-950 pb-28" style="touch-action:pan-y;">
+  <div v-if="devAccessGranted" class="bg-slate-100 dark:bg-zinc-950 pb-28" style="touch-action:pan-y;">
 
     <!-- Header -->
     <div class="flex items-center gap-3 px-5 pt-6 pb-4">
@@ -352,6 +352,120 @@
       </div>
     </Transition>
   </Teleport>
+
+  <Teleport to="body">
+    <Transition name="sheet">
+      <div v-if="showDevPinPrompt"
+        class="fixed inset-0 z-[600] flex flex-col items-center justify-center bg-slate-100 dark:bg-zinc-950 overflow-hidden px-8"
+        :style="{ paddingTop:'env(safe-area-inset-top)', paddingBottom:'calc(32px + env(safe-area-inset-bottom))' }">
+        <div class="absolute inset-0 pointer-events-none">
+          <div class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full"
+            :style="{ background: `radial-gradient(circle, ${settings.accentColor}22 0%, transparent 65%)` }"></div>
+        </div>
+        <div class="relative flex flex-col items-center gap-8 w-full max-w-[380px]">
+          <div class="relative" style="width:56px;height:56px;">
+            <div class="absolute inset-0 rounded-full" :style="{ border: `1px solid ${settings.accentColor}55`, animation:'pin-spin 10s linear infinite' }"></div>
+            <div class="absolute rounded-full" :style="{ inset:'6px', background:'radial-gradient(circle at 38% 32%,#18181b 0%,#09090b 55%,#000 100%)', boxShadow:`0 0 16px 4px ${settings.accentColor}44` }"></div>
+          </div>
+          <div class="text-center">
+            <p class="text-[13px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-[0.2em]">Developer Tools</p>
+            <p class="text-[12px] text-slate-400 dark:text-zinc-400 mt-2">Enter your App PIN to continue</p>
+          </div>
+          <div class="flex gap-5 justify-center" :class="devPinShaking ? 'pin-shake' : ''">
+            <div v-for="i in 6" :key="i"
+              class="w-4 h-4 rounded-full border-2 transition-all duration-200"
+              :class="[
+                i <= devPinInput.length ? 'border-transparent scale-110' : 'border-zinc-700 scale-100',
+                devPinWrong && i <= devPinInput.length ? 'border-rose-500' : ''
+              ]"
+              :style="i <= devPinInput.length && !devPinWrong ? { background: settings.accentColor } :
+                      devPinWrong && i <= devPinInput.length ? { background: '#ef4444' } : {}">
+            </div>
+          </div>
+          <p v-if="devPinError" class="text-[13px] font-bold text-rose-400 -mt-4">{{ devPinError }}</p>
+          <div class="grid grid-cols-3 gap-3 w-full">
+            <button v-for="key in pinKeypad" :key="key"
+              @click="handleDevPinKey(key)"
+              :class="['h-[72px] rounded-2xl text-[24px] font-black transition-all active:scale-90',
+                key === '⌫' ? 'bg-slate-100 dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 active:bg-slate-200 dark:active:bg-zinc-800' :
+                key === '' ? 'pointer-events-none' : 'bg-slate-100 dark:bg-zinc-900 text-slate-900 dark:text-white active:bg-slate-200 dark:active:bg-zinc-800']">
+              {{ key }}
+            </button>
+          </div>
+          <button @click="cancelDeveloperAccess" class="text-[13px] font-semibold text-slate-500 dark:text-zinc-600 active:text-slate-400 dark:active:text-zinc-400 py-2">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <Teleport to="body">
+    <Transition name="sheet">
+      <div v-if="showPinSetup" class="fixed inset-0 z-[610] flex items-end justify-center"
+        style="background:rgba(0,0,0,0.6);backdrop-filter:blur(12px)" @click.self="cancelDeveloperAccess">
+        <div class="w-full max-w-[430px] bg-white dark:bg-zinc-900 rounded-t-[28px] border-t border-slate-200/60 dark:border-zinc-800"
+          :style="{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))' }">
+          <div class="flex flex-col gap-4 px-5 pt-4">
+            <div class="w-10 h-1 bg-slate-200 dark:bg-zinc-700 rounded-full self-center mb-1"></div>
+            <h3 class="text-[18px] font-black text-center text-slate-900 dark:text-zinc-50">Set App PIN</h3>
+            <p class="text-[13px] text-slate-400 dark:text-zinc-500 text-center -mt-2">Choose a 6-digit PIN</p>
+            <div class="flex gap-4 justify-center pt-1">
+              <div v-for="i in 6" :key="i"
+                class="w-4 h-4 rounded-full border-2 transition-all duration-200"
+                :class="i <= setupPin.length ? 'border-transparent scale-110' : 'border-slate-300 dark:border-zinc-600'"
+                :style="i <= setupPin.length ? { background: settings.accentColor } : {}"></div>
+            </div>
+            <div class="grid grid-cols-3 gap-3 pt-2">
+              <button v-for="k in pinKeypad" :key="`setup-${k}`" @click="handleSetupKey(k)"
+                :class="['h-16 rounded-2xl text-[22px] font-black transition-all active:scale-90',
+                  k === '⌫' ? 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 active:bg-slate-200 dark:active:bg-zinc-700' :
+                  k === '' ? 'pointer-events-none' : 'bg-slate-100 dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 active:bg-slate-200 dark:active:bg-zinc-700']">
+                {{ k }}
+              </button>
+            </div>
+            <button @click="proceedToQuestion" :disabled="setupPin.length < 6"
+              class="w-full py-4 rounded-2xl text-[16px] font-black transition-all active:scale-[0.98]"
+              :style="setupPin.length >= 6 ? { background: settings.accentColor, color: 'white', boxShadow: `0 8px 24px ${settings.accentColor}44` } : { background: '#e2e8f0', color: '#94a3b8' }">
+              Continue
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
+
+  <Teleport to="body">
+    <Transition name="sheet">
+      <div v-if="showQuestionSetup" class="fixed inset-0 z-[620] flex items-end justify-center"
+        style="background:rgba(0,0,0,0.6);backdrop-filter:blur(12px)" @click.self="cancelDeveloperAccess">
+        <div class="w-full max-w-[430px] bg-white dark:bg-zinc-900 rounded-t-[28px] border-t border-slate-200/60 dark:border-zinc-800"
+          :style="{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))' }">
+          <div class="flex flex-col gap-4 px-5 pt-4">
+            <div class="w-10 h-1 bg-slate-200 dark:bg-zinc-700 rounded-full self-center mb-1"></div>
+            <h3 class="text-[18px] font-black text-center text-slate-900 dark:text-zinc-50">Security Question</h3>
+            <p class="text-[13px] text-slate-400 dark:text-zinc-500 text-center -mt-2">Used to reset your PIN if forgotten</p>
+            <div class="grid grid-cols-1 gap-2">
+              <button v-for="q in securityQuestions" :key="q" @click="selectedQuestion = q"
+                :class="['px-4 py-3 rounded-2xl border-2 text-left transition-all',
+                  selectedQuestion === q
+                    ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300'
+                    : 'border-transparent bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400']">
+                {{ q }}
+              </button>
+            </div>
+            <input v-model="securityAnswer" placeholder="Your answer"
+              class="w-full bg-slate-50 dark:bg-zinc-800 rounded-2xl px-4 py-3.5 text-[15px] font-semibold text-slate-900 dark:text-zinc-50 placeholder:text-slate-300 dark:placeholder:text-zinc-600 border-2 border-transparent focus:border-violet-500 outline-none transition-colors" />
+            <button @click="savePinSetup" :disabled="!selectedQuestion || !securityAnswer.trim()"
+              class="w-full py-4 rounded-2xl text-[16px] font-black text-white transition-all active:scale-[0.98] disabled:opacity-40"
+              :style="{ background: settings.accentColor, boxShadow: `0 8px 24px ${settings.accentColor}44` }">
+              Save PIN
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -364,9 +478,30 @@ import { useNav } from '../composables/useNav'
 import { appLogs, orbLog, settings } from '../composables/useStore'
 import { useDevControl } from '../composables/useDevControl'
 import { triggerLockNow } from '../composables/useIdleLock'
+import { pinEnabled, setPin, verifyPin } from '../composables/usePin'
 
 const { navigate } = useNav()
 const { resetAll }  = useDevControl()
+
+const devAccessGranted = ref(false)
+const showDevPinPrompt = ref(false)
+const devPinInput      = ref('')
+const devPinError      = ref('')
+const devPinWrong      = ref(false)
+const devPinShaking    = ref(false)
+const showPinSetup     = ref(false)
+const showQuestionSetup = ref(false)
+const setupPin         = ref('')
+const selectedQuestion = ref('')
+const securityAnswer   = ref('')
+const pinKeypad        = ['1','2','3','4','5','6','7','8','9','','0','⌫']
+const securityQuestions = [
+  "What was the name of your first pet?",
+  "What city were you born in?",
+  "What is your mother's maiden name?",
+  "What was the name of your elementary school?",
+  "What was the make of your first car?",
+]
 
 const busy             = ref(false)
 const resetOutput      = ref<string[]>([])
@@ -507,6 +642,96 @@ function togglePerfMon() {
 
 onMounted(startPerfMon)
 onUnmounted(stopPerfMon)
+
+function cancelDeveloperAccess() {
+  showDevPinPrompt.value = false
+  showPinSetup.value = false
+  showQuestionSetup.value = false
+  navigate('more')
+}
+
+function beginDeveloperAuth() {
+  devAccessGranted.value = false
+  devPinInput.value = ''
+  devPinError.value = ''
+  devPinWrong.value = false
+  devPinShaking.value = false
+  if (pinEnabled.value) {
+    showDevPinPrompt.value = true
+    showPinSetup.value = false
+    showQuestionSetup.value = false
+  } else {
+    showDevPinPrompt.value = false
+    showPinSetup.value = true
+    showQuestionSetup.value = false
+  }
+}
+
+function unlockDeveloperAccess() {
+  devAccessGranted.value = true
+  showDevPinPrompt.value = false
+  showPinSetup.value = false
+  showQuestionSetup.value = false
+  devPinInput.value = ''
+  devPinError.value = ''
+}
+
+function handleDevPinKey(k: string) {
+  if (!k) return
+  if (k === '⌫') {
+    devPinInput.value = devPinInput.value.slice(0, -1)
+    devPinError.value = ''
+    devPinWrong.value = false
+    return
+  }
+  if (devPinInput.value.length >= 6) return
+  devPinInput.value += k
+  if (devPinInput.value.length === 6) checkDeveloperPin()
+}
+
+async function checkDeveloperPin() {
+  const ok = await verifyPin(devPinInput.value)
+  if (ok) {
+    unlockDeveloperAccess()
+    return
+  }
+  devPinWrong.value = true
+  devPinShaking.value = true
+  devPinError.value = 'Incorrect PIN - try again'
+  setTimeout(() => { devPinShaking.value = false }, 600)
+  setTimeout(() => {
+    devPinInput.value = ''
+    devPinWrong.value = false
+    devPinError.value = ''
+  }, 700)
+}
+
+function handleSetupKey(k: string) {
+  if (!k) return
+  if (k === '⌫') { setupPin.value = setupPin.value.slice(0, -1); return }
+  if (setupPin.value.length >= 6) return
+  setupPin.value += k
+}
+
+function proceedToQuestion() {
+  if (setupPin.value.length < 6) return
+  showPinSetup.value = false
+  selectedQuestion.value = ''
+  securityAnswer.value = ''
+  showQuestionSetup.value = true
+}
+
+async function savePinSetup() {
+  if (!selectedQuestion.value || !securityAnswer.value.trim()) return
+  await setPin(setupPin.value, selectedQuestion.value, securityAnswer.value)
+  setupPin.value = ''
+  selectedQuestion.value = ''
+  securityAnswer.value = ''
+  orbLog('PIN security enabled from developer access gate')
+  unlockDeveloperAccess()
+}
+
+onMounted(beginDeveloperAuth)
 
 const latestCpu  = computed(() => cpuHistory.value[cpuHistory.value.length - 1] ?? 0)
 const latestHeap = computed(() => heapHistory.value[heapHistory.value.length - 1] ?? 0)

@@ -1,5 +1,5 @@
 <template>
-  <div class="devkit-layout flex flex-col w-full max-w-[430px] mx-auto"
+  <div :class="['devkit-layout flex flex-col w-full max-w-[430px] mx-auto', isDark ? 'theme-dark' : 'theme-light']"
     style="height:100dvh;overflow:hidden;padding-top:env(safe-area-inset-top);">
     <div class="relative flex-1" style="overflow:hidden;min-height:0;">
       <Transition :name="transitionName">
@@ -11,7 +11,7 @@
 
     <!-- Tab bar — visible on all pages except 'settings' and 'developer' -->
     <nav v-if="isTabPage" class="flex-shrink-0 flex items-center z-50"
-      style="background:rgba(6,8,16,0.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,0.06);padding-bottom:calc(8px + env(safe-area-inset-bottom));">
+      :style="tabBarStyle">
 
       <button v-for="tab in leftTabs" :key="tab.id"
         class="flex-1 flex flex-col items-center gap-1 pt-2.5 pb-1 active:scale-90 transition-transform"
@@ -83,10 +83,10 @@
     <Transition name="sheet-fade">
       <div v-if="showDevConfirm"
         class="fixed inset-0 z-[400] flex items-end justify-center"
-        style="background:rgba(0,0,0,0.7);backdrop-filter:blur(14px);"
+        :style="sheetBackdropStyle"
         @click.self="showDevConfirm = false">
         <div class="w-full max-w-[430px] rounded-t-[28px] border-t px-5 pt-5"
-          :style="{ background: '#0e0b1e', borderColor: accent + '33', paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' }">
+          :style="sheetPanelStyle">
           <div class="w-10 h-1 rounded-full mx-auto mb-5" :style="{ background: accent + '44' }"></div>
           <div class="flex justify-center mb-4">
             <div class="w-16 h-16 rounded-2xl flex items-center justify-center"
@@ -94,10 +94,10 @@
               <Code2 :size="26" :style="{ color: accent }" :stroke-width="1.8" />
             </div>
           </div>
-          <p class="text-[18px] font-black text-center mb-2 text-zinc-100">
+          <p :class="['text-[18px] font-black text-center mb-2', isDark ? 'text-zinc-100' : 'text-slate-900']">
             {{ devMode ? 'Disable Dev Mode?' : 'Enable Dev Mode?' }}
           </p>
-          <p class="text-[13px] text-center leading-relaxed mb-6 text-zinc-500">
+          <p :class="['text-[13px] text-center leading-relaxed mb-6', isDark ? 'text-zinc-500' : 'text-slate-500']">
             {{ devMode
               ? 'Disables TCP connection, extended logging and debug overlays.'
               : 'Enables TCP connection, device monitoring, hot reload and extended logging.' }}
@@ -108,7 +108,7 @@
             {{ devMode ? 'Yes, disable' : 'Yes, enable dev mode' }}
           </button>
           <button @click="showDevConfirm = false"
-            class="w-full py-3.5 rounded-2xl text-[15px] font-bold active:scale-[0.98] text-zinc-400 mb-2"
+            :class="['w-full py-3.5 rounded-2xl text-[15px] font-bold active:scale-[0.98] mb-2', isDark ? 'text-zinc-400' : 'text-slate-500']"
             :style="{ background: accent + '12' }">
             Cancel
           </button>
@@ -127,6 +127,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Home, FileCode2, MoreHorizontal, Monitor, Code2 } from 'lucide-vue-next'
 import { useNav } from '../composables/useNav'
+import { useDark } from '../composables/useDark'
 import { settings } from '../composables/useStore'
 import { devMode, toggleDevMode } from '../composables/useDevMode'
 import { onlineDevices } from '../composables/useDevices'
@@ -141,6 +142,7 @@ import Devices   from '../pages/devices.vue'
 import FAQ       from '../pages/faq.vue'
 
 const { activePage, transitionName, navigate, TAB_ORDER } = useNav()
+const { isDark } = useDark()
 const accent      = computed(() => settings.value.accentColor)
 const onlineCount = computed(() => onlineDevices.value.length)
 
@@ -170,6 +172,26 @@ const rightTabs = [
   { id: 'devices', icon: Monitor,        label: 'devices' },
   { id: 'more',    icon: MoreHorizontal, label: 'tools'   },
 ]
+
+const tabBarStyle = computed(() => ({
+  background: isDark.value ? 'rgba(6,8,16,0.94)' : 'rgba(255,255,255,0.92)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  borderTop: `1px solid ${isDark.value ? 'rgba(255,255,255,0.06)' : 'rgba(148,163,184,0.18)'}`,
+  paddingBottom: 'calc(8px + env(safe-area-inset-bottom))',
+}))
+
+const sheetBackdropStyle = computed(() => ({
+  background: isDark.value ? 'rgba(0,0,0,0.7)' : 'rgba(241,245,249,0.72)',
+  backdropFilter: 'blur(14px)',
+}))
+
+const sheetPanelStyle = computed(() => ({
+  background: isDark.value ? '#0e0b1e' : '#ffffff',
+  borderColor: `${accent.value}33`,
+  paddingBottom: 'calc(40px + env(safe-area-inset-bottom))',
+  boxShadow: isDark.value ? 'none' : '0 -24px 60px rgba(15,23,42,0.12)',
+}))
 
 function handlePop() {
   const TAB_PAGES = new Set(['home', 'env', 'more', 'devices'])

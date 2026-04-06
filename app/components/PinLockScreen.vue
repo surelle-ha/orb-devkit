@@ -1,7 +1,7 @@
 <template>
   <Transition name="pin-fade">
     <div v-if="isPinLocked"
-      class="fixed inset-0 z-[9998] flex flex-col items-center justify-between bg-zinc-950 overflow-hidden"
+      class="fixed inset-0 z-[9998] flex flex-col items-center justify-between bg-slate-100 dark:bg-zinc-950 overflow-hidden"
       :style="{ paddingTop:'env(safe-area-inset-top)', paddingBottom:'calc(32px + env(safe-area-inset-bottom))' }">
 
       <!-- Ambient glow -->
@@ -14,7 +14,7 @@
       <Teleport to="body">
         <Transition name="pin-fade">
           <div v-if="showForgot"
-            class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-zinc-950 px-8"
+            class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-100 dark:bg-zinc-950 px-8"
             :style="{ paddingTop:'env(safe-area-inset-top)' }">
 
             <div class="w-full max-w-[380px] flex flex-col items-center gap-6">
@@ -24,13 +24,13 @@
               </div>
 
               <div class="text-center">
-                <h2 class="text-[22px] font-black text-white">Forgot your PIN?</h2>
-                <p class="text-[13px] text-zinc-400 mt-2 leading-relaxed">Answer your security question to reset it.</p>
+                <h2 class="text-[22px] font-black text-slate-900 dark:text-white">Forgot your PIN?</h2>
+                <p class="text-[13px] text-slate-500 dark:text-zinc-400 mt-2 leading-relaxed">Answer your security question to reset it.</p>
               </div>
 
-              <div class="w-full bg-zinc-900 rounded-2xl p-4 border border-zinc-800">
-                <p class="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Security Question</p>
-                <p class="text-[15px] font-bold text-zinc-200">{{ pinMeta?.hint || 'No question set' }}</p>
+              <div class="w-full bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-slate-200 dark:border-zinc-800">
+                <p class="text-[11px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-2">Security Question</p>
+                <p class="text-[15px] font-bold text-slate-800 dark:text-zinc-200">{{ pinMeta?.hint || 'No question set' }}</p>
               </div>
 
               <div class="w-full">
@@ -40,7 +40,7 @@
                   placeholder="Your answer…"
                   autocomplete="off"
                   @keydown.enter="checkAnswer"
-                  class="w-full bg-zinc-900 border-2 border-zinc-800 focus:border-violet-500 rounded-2xl px-4 py-3.5 text-[15px] font-semibold text-white placeholder:text-zinc-600 outline-none transition-colors"
+                  class="w-full bg-white dark:bg-zinc-900 border-2 border-slate-200 dark:border-zinc-800 focus:border-violet-500 rounded-2xl px-4 py-3.5 text-[15px] font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-600 outline-none transition-colors"
                 />
                 <p v-if="answerError" class="text-[12px] font-bold text-rose-400 mt-2 text-center">{{ answerError }}</p>
               </div>
@@ -52,7 +52,7 @@
               </button>
 
               <button @click="showForgot = false; answerInput = ''; answerError = ''"
-                class="text-[13px] font-semibold text-zinc-600 active:text-zinc-400">
+                class="text-[13px] font-semibold text-slate-500 dark:text-zinc-600 active:text-slate-400 dark:active:text-zinc-400">
                 Back to PIN
               </button>
             </div>
@@ -64,7 +64,7 @@
       <Teleport to="body">
         <Transition name="pin-fade">
           <div v-if="showResetPin"
-            class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-zinc-950 px-8"
+            class="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-100 dark:bg-zinc-950 px-8"
             :style="{ paddingTop:'env(safe-area-inset-top)' }">
             <div class="w-full max-w-[380px] flex flex-col items-center gap-6">
               <div class="w-16 h-16 rounded-2xl flex items-center justify-center"
@@ -72,8 +72,8 @@
                 <KeyRound :size="28" :style="{ color: accent }" :stroke-width="1.8" />
               </div>
               <div class="text-center">
-                <h2 class="text-[22px] font-black text-white">Set New PIN</h2>
-                <p class="text-[13px] text-zinc-400 mt-1">Choose a new 6-digit PIN</p>
+                <h2 class="text-[22px] font-black text-slate-900 dark:text-white">Set New PIN</h2>
+                <p class="text-[13px] text-slate-500 dark:text-zinc-400 mt-1">Choose a new 6-digit PIN</p>
               </div>
               <!-- New PIN dots -->
               <div class="flex gap-4 justify-center">
@@ -81,7 +81,7 @@
                   class="w-4 h-4 rounded-full border-2 transition-all duration-200"
                   :class="i <= resetInput.length
                     ? 'border-transparent'
-                    : 'border-zinc-700'"
+                    : 'border-slate-300 dark:border-zinc-700'"
                   :style="i <= resetInput.length ? { background: accent } : {}">
                 </div>
               </div>
@@ -90,7 +90,7 @@
                 <button v-for="k in ['1','2','3','4','5','6','7','8','9','','0','⌫']" :key="k"
                   @click="handleResetKey(k)"
                   :class="['h-16 rounded-2xl text-[22px] font-black transition-all active:scale-90',
-                    k === '' ? 'pointer-events-none' : 'bg-zinc-800 text-white active:bg-zinc-700']">
+                    k === '' ? 'pointer-events-none' : 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white border border-slate-200 dark:border-zinc-700 active:bg-slate-100 dark:active:bg-zinc-700']">
                   {{ k }}
                 </button>
               </div>
@@ -114,7 +114,7 @@
         </div>
 
         <div class="text-center">
-          <p class="text-[13px] font-bold text-zinc-500 uppercase tracking-[0.2em]">Enter your PIN</p>
+          <p class="text-[13px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-[0.2em]">Enter your PIN</p>
         </div>
 
         <!-- PIN dots -->
@@ -124,7 +124,7 @@
             :class="[
               i <= enteredPin.length
                 ? 'border-transparent scale-110'
-                : 'border-zinc-700 scale-100',
+                : 'border-slate-300 dark:border-zinc-700 scale-100',
               wrongAttempt && i <= enteredPin.length ? 'border-rose-500' : ''
             ]"
             :style="i <= enteredPin.length && !wrongAttempt ? { background: accent } :
@@ -141,14 +141,14 @@
           <button v-for="key in keypad" :key="key"
             @click="handleKey(key)"
             :class="['h-[72px] rounded-2xl text-[24px] font-black transition-all active:scale-90',
-              key === '⌫' ? 'bg-zinc-900 text-zinc-400' :
-              key === '' ? 'pointer-events-none' : 'bg-zinc-900 text-white active:bg-zinc-800']">
+              key === '⌫' ? 'bg-white dark:bg-zinc-900 text-slate-500 dark:text-zinc-400 border border-slate-200 dark:border-zinc-800 active:bg-slate-100 dark:active:bg-zinc-800' :
+              key === '' ? 'pointer-events-none' : 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white border border-slate-200 dark:border-zinc-800 active:bg-slate-100 dark:active:bg-zinc-800']">
             {{ key }}
           </button>
         </div>
 
         <!-- Forgot PIN -->
-        <button @click="showForgot = true" class="text-center text-[13px] font-semibold text-zinc-600 active:text-zinc-400 py-2">
+        <button @click="showForgot = true" class="text-center text-[13px] font-semibold text-slate-500 dark:text-zinc-600 active:text-slate-400 dark:active:text-zinc-400 py-2">
           Forgot PIN?
         </button>
       </div>
