@@ -4,16 +4,18 @@
     <!-- ── Topbar ── -->
     <div class="flex items-center justify-between px-5 pt-6 pb-3">
       <div>
-        <p class="text-[10px] font-mono text-zinc-600 tracking-[0.25em] uppercase">orb devkit</p>
-        <h1 class="text-[22px] font-black text-zinc-50 tracking-tight mt-0.5 font-mono">
+        <p class="text-[10px] font-mono tracking-[0.25em] uppercase"
+          :style="{ color: isDark ? '#52525b' : '#94a3b8' }">orb devkit</p>
+        <h1 class="text-[22px] font-black tracking-tight mt-0.5 font-mono"
+          :style="{ color: isDark ? '#fafafa' : '#0f172a' }">
           <span :style="{ color: accent }">›</span> dashboard
         </h1>
       </div>
       <div class="flex items-center gap-2">
         <button @click="navigate('settings')"
           class="w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
-          style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);">
-          <Settings :size="16" class="text-zinc-400" :stroke-width="1.8" />
+          :style="{ background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)', border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)' }">
+          <Settings :size="16" :style="{ color: isDark ? '#a1a1aa' : '#64748b' }" :stroke-width="1.8" />
         </button>
       </div>
     </div>
@@ -22,42 +24,50 @@
 
     <!-- supreme -->
     <div v-if="balanceStyle === 'supreme'" class="mx-4 mb-4 relative overflow-hidden rounded-3xl"
-      :style="{ background: '#080b12', boxShadow: `0 0 0 1px ${accent}22, 0 12px 48px rgba(0,0,0,0.5)` }">
+      :style="{
+        background: isDark ? '#080b12' : 'rgba(248,250,252,0.95)',
+        boxShadow: isDark
+          ? `0 0 0 1px ${accent}22, 0 12px 48px rgba(0,0,0,0.5)`
+          : `0 0 0 1px ${accent}33, 0 12px 48px rgba(15,23,42,0.10)`,
+      }">
       <canvas ref="starsCanvas" class="absolute inset-0 pointer-events-none"
-        style="width:100%;height:100%;opacity:0.6;"></canvas>
+        style="width:100%;height:100%;" :style="{ opacity: isDark ? 0.6 : 0.18 }"></canvas>
       <div class="absolute inset-0 pointer-events-none"
         :style="{ backgroundImage: `linear-gradient(${accent}08 1px, transparent 1px), linear-gradient(90deg, ${accent}08 1px, transparent 1px)`, backgroundSize: '32px 32px' }">
       </div>
       <div class="absolute inset-0 pointer-events-none"
         :style="{ background: `radial-gradient(ellipse at 50% 40%, ${accent}28 0%, transparent 65%)` }"></div>
+
+      <!-- Topbar row -->
       <div class="relative flex items-center justify-between px-5 pt-4 pb-0">
         <div class="flex items-center gap-1.5">
           <div class="w-2 h-2 rounded-full bg-rose-500 opacity-70"></div>
           <div class="w-2 h-2 rounded-full bg-amber-400 opacity-70"></div>
           <div class="w-2 h-2 rounded-full bg-emerald-400 opacity-70"></div>
-          <span class="text-[10px] font-mono text-zinc-700 ml-2 tracking-widest">core.runtime</span>
+          <span class="text-[10px] font-mono ml-2 tracking-widest"
+            :style="{ color: isDark ? '#3f3f46' : '#94a3b8' }">core.runtime</span>
         </div>
         <button @click="confirmDevMode"
-          class="flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all active:scale-95" :style="devMode
+          class="flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all active:scale-95"
+          :style="devMode
             ? { background: `${accent}20`, border: `1px solid ${accent}44` }
-            : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }">
-          <div class="w-1.5 h-1.5 rounded-full" :style="{ background: devMode ? accent : '#3f3f46' }"></div>
-          <span class="text-[10px] font-mono font-bold" :style="{ color: devMode ? accent : '#52525b' }">
+            : { background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)', border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.09)' }">
+          <div class="w-1.5 h-1.5 rounded-full" :style="{ background: devMode ? accent : isDark ? '#3f3f46' : '#94a3b8' }"></div>
+          <span class="text-[10px] font-mono font-bold" :style="{ color: devMode ? accent : isDark ? '#52525b' : '#64748b' }">
             {{ devMode ? 'dev:on' : 'dev:off' }}
           </span>
         </button>
       </div>
 
-      <!-- Supreme orb area with twin daemon orb -->
+      <!-- Supreme orb area -->
       <button @click="confirmDevMode"
         class="relative w-full flex flex-col items-center pt-2 pb-3 active:scale-[0.97] transition-transform duration-200">
-        <!-- Accretion rings -->
+        <!-- Accretion rings (top half) -->
         <div class="absolute pointer-events-none"
           style="top:62px;left:50%;transform:translateX(-50%);width:1px;height:1px;">
           <svg class="absolute orb-h-ring-4"
             style="width:310px;height:68px;margin-left:-155px;margin-top:-34px;overflow:visible;">
-            <path d="M 1,34 A 154,33 0 0,1 309,34" fill="none" :stroke="accent + '10'" stroke-width="1"
-              style="filter:blur(1px);" />
+            <path d="M 1,34 A 154,33 0 0,1 309,34" fill="none" :stroke="accent + '10'" stroke-width="1" style="filter:blur(1px);" />
           </svg>
           <svg class="absolute orb-h-ring-3"
             style="width:254px;height:52px;margin-left:-127px;margin-top:-26px;overflow:visible;">
@@ -82,12 +92,12 @@
             :style="{ background: `radial-gradient(circle at 28% 26%, ${accent}2E 0%, transparent 55%)` }"></div>
         </div>
 
+        <!-- Accretion rings (bottom half) -->
         <div class="absolute pointer-events-none"
           style="top:62px;left:50%;transform:translateX(-50%);width:1px;height:1px;">
           <svg class="absolute orb-h-ring-4"
             style="width:310px;height:68px;margin-left:-155px;margin-top:-34px;overflow:visible;">
-            <path d="M 1,34 A 154,33 0 0,0 309,34" fill="none" :stroke="accent + '10'" stroke-width="1"
-              style="filter:blur(1px);" />
+            <path d="M 1,34 A 154,33 0 0,0 309,34" fill="none" :stroke="accent + '10'" stroke-width="1" style="filter:blur(1px);" />
           </svg>
           <svg class="absolute orb-h-ring-3"
             style="width:254px;height:52px;margin-left:-127px;margin-top:-26px;overflow:visible;">
@@ -108,66 +118,71 @@
             :style="{ background: accent, opacity: 0.7 }"></div>
         </div>
 
-        <!-- Twin Daemon Orb — only shows when daemon is connected AND dev mode is on -->
+        <!-- Twin Daemon Orb -->
         <Transition name="twin-orb">
           <div v-if="showTwinOrb" class="absolute twin-orb-container cursor-pointer" style="top:10px;right:30px;"
             @click.stop="goToDevice">
-            <!-- Connection line SVG -->
-            <svg class="absolute" style="top:30px;right:44px;overflow:visible;pointer-events:none;" width="80"
-              height="40">
+            <svg class="absolute" style="top:30px;right:44px;overflow:visible;pointer-events:none;" width="80" height="40">
               <path :d="`M 80,0 C 50,0 30,20 0,20`" fill="none" :stroke="accent" stroke-width="1" stroke-dasharray="4 3"
                 style="opacity:0.5;animation:tcp-dash 1.2s linear infinite;" />
               <circle cx="80" cy="0" r="2" :fill="accent" opacity="0.8" />
             </svg>
-            <!-- Twin orb body -->
             <div class="relative" style="width:40px;height:40px;">
-              <div class="absolute inset-0 rounded-full tcp-orb-ring" :style="{ border: `1px solid ${accent}66` }">
-              </div>
-              <div class="absolute rounded-full tcp-orb-ring-inner"
-                :style="{ inset: '4px', border: `0.5px solid ${accent}44` }"></div>
-              <div class="absolute rounded-full"
-                :style="{ inset: '8px', boxShadow: `0 0 10px 3px ${accent}55`, borderRadius: '50%' }"></div>
+              <div class="absolute inset-0 rounded-full tcp-orb-ring" :style="{ border: `1px solid ${accent}66` }"></div>
+              <div class="absolute rounded-full tcp-orb-ring-inner" :style="{ inset: '4px', border: `0.5px solid ${accent}44` }"></div>
+              <div class="absolute rounded-full" :style="{ inset: '8px', boxShadow: `0 0 10px 3px ${accent}55`, borderRadius: '50%' }"></div>
               <div class="absolute rounded-full"
                 style="inset:8px;background:radial-gradient(circle at 38% 32%,#1a1a2e 0%,#09090b 55%,#000 100%);"
                 :style="{ boxShadow: `inset 0 0 8px rgba(0,0,0,1)` }"></div>
-              <!-- Online pulse dot -->
               <div class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 animate-pulse"
                 style="border-color:#060810;background:#34d399;"></div>
-              <!-- Data particles -->
               <div v-for="p in tcpParticles" :key="p.id" class="absolute rounded-full tcp-particle" :style="{
-                width: p.size + 'px', height: p.size + 'px',
-                background: accent, opacity: p.opacity,
-                animationDuration: p.dur + 's',
-                animationDelay: p.delay + 's',
+                width: p.size + 'px', height: p.size + 'px', background: accent, opacity: p.opacity,
+                animationDuration: p.dur + 's', animationDelay: p.delay + 's',
                 top: p.startY + 'px', left: p.startX + 'px',
               }"></div>
             </div>
             <p class="text-center mt-1.5 font-mono font-black text-[8px]" :style="{ color: accent + '88' }">desktop</p>
-            <p class="text-center font-mono text-[7px]" style="color:rgba(255,255,255,0.2);">tap to open</p>
+            <p class="text-center font-mono text-[7px]" :style="{ color: isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.25)' }">tap to open</p>
           </div>
         </Transition>
 
+        <!-- Status line -->
         <div class="relative mt-10 mx-5 px-3.5 py-1.5 rounded-xl text-center max-w-[280px]"
-          style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
-          <p class="text-[11px] font-mono leading-snug" style="color:rgba(255,255,255,0.4);">{{ orbStatusLine }}</p>
+          :style="{ background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)', border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)' }">
+          <p class="text-[11px] font-mono leading-snug" :style="{ color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(15,23,42,0.5)' }">{{ orbStatusLine }}</p>
         </div>
       </button>
 
+      <!-- Metrics row -->
       <div class="relative grid grid-cols-3 gap-0 pb-4 px-5 mt-2">
         <div v-for="(m, i) in coreMetrics" :key="m.label"
-          :class="['flex flex-col gap-0.5', i < 2 ? 'border-r border-white/5 pr-4' : 'pl-4']">
-          <span class="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">{{ m.label }}</span>
+          :class="['flex flex-col gap-0.5', i < 2 ? 'border-r pr-4' : 'pl-4']"
+          :style="{ borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.07)' }">
+          <span class="text-[9px] font-mono uppercase tracking-widest"
+            :style="{ color: isDark ? '#52525b' : '#94a3b8' }">{{ m.label }}</span>
           <span class="text-[15px] font-black font-mono" :style="{ color: m.color }">{{ m.value }}</span>
-          <span class="text-[9px] font-mono text-zinc-700">{{ m.sub }}</span>
+          <span class="text-[9px] font-mono" :style="{ color: isDark ? '#3f3f46' : '#94a3b8' }">{{ m.sub }}</span>
         </div>
       </div>
     </div>
 
     <!-- neon -->
     <div v-else-if="balanceStyle === 'neon'" class="mx-4 mb-4 relative overflow-hidden rounded-3xl"
-      :style="{ background: `linear-gradient(135deg, #0a0a1a 0%, #0f0f28 50%, ${accent}22 100%)`, boxShadow: `0 0 0 1px ${accent}55, 0 8px 40px ${accent}30` }">
-      <div class="absolute inset-0 pointer-events-none opacity-10"
-        :style="{ backgroundImage: `linear-gradient(${accent}40 1px, transparent 1px), linear-gradient(90deg, ${accent}40 1px, transparent 1px)`, backgroundSize: '40px 40px' }">
+      :style="{
+        background: isDark
+          ? `linear-gradient(135deg, #0a0a1a 0%, #0f0f28 50%, ${accent}22 100%)`
+          : `linear-gradient(135deg, #f0f4ff 0%, #e8eeff 50%, ${accent}18 100%)`,
+        boxShadow: isDark
+          ? `0 0 0 1px ${accent}55, 0 8px 40px ${accent}30`
+          : `0 0 0 1px ${accent}44, 0 8px 40px ${accent}18`,
+      }">
+      <div class="absolute inset-0 pointer-events-none"
+        :style="{
+          opacity: isDark ? 0.1 : 0.06,
+          backgroundImage: `linear-gradient(${accent}40 1px, transparent 1px), linear-gradient(90deg, ${accent}40 1px, transparent 1px)`,
+          backgroundSize: '40px 40px'
+        }">
       </div>
       <div class="absolute top-0 left-0 right-0 h-px"
         :style="{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, boxShadow: `0 0 12px ${accent}` }">
@@ -175,9 +190,11 @@
       <div class="absolute top-3 right-3 z-10">
         <button @click="confirmDevMode"
           class="flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all active:scale-95"
-          :style="devMode ? { background: `${accent}20`, border: `1px solid ${accent}44` } : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }">
-          <div class="w-1.5 h-1.5 rounded-full" :style="{ background: devMode ? accent : '#3f3f46' }"></div>
-          <span class="text-[10px] font-mono font-bold" :style="{ color: devMode ? accent : '#52525b' }">
+          :style="devMode
+            ? { background: `${accent}20`, border: `1px solid ${accent}44` }
+            : { background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)', border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.09)' }">
+          <div class="w-1.5 h-1.5 rounded-full" :style="{ background: devMode ? accent : isDark ? '#3f3f46' : '#94a3b8' }"></div>
+          <span class="text-[10px] font-mono font-bold" :style="{ color: devMode ? accent : isDark ? '#52525b' : '#64748b' }">
             {{ devMode ? 'dev:on' : 'dev:off' }}
           </span>
         </button>
@@ -195,15 +212,16 @@
             :style="{ background: `radial-gradient(circle at 28% 26%, ${accent}2E 0%, transparent 55%)` }"></div>
         </div>
         <p class="mt-4 text-[11px] font-mono text-center"
-          :style="{ color: accent + '99', textShadow: `0 0 8px ${accent}` }">{{ orbStatusLine }}</p>
+          :style="{ color: accent + '99', textShadow: isDark ? `0 0 8px ${accent}` : 'none' }">{{ orbStatusLine }}</p>
       </button>
       <div class="grid grid-cols-3 gap-0 pb-4 px-5">
         <div v-for="(m, i) in coreMetrics" :key="m.label"
-          :class="['flex flex-col gap-0.5', i < 2 ? 'border-r pr-4' : 'pl-4']" :style="{ borderColor: accent + '20' }">
-          <span class="text-[9px] font-mono uppercase tracking-widest" :style="{ color: accent + '55' }">{{ m.label }}</span>
+          :class="['flex flex-col gap-0.5', i < 2 ? 'border-r pr-4' : 'pl-4']"
+          :style="{ borderColor: accent + '20' }">
+          <span class="text-[9px] font-mono uppercase tracking-widest" :style="{ color: isDark ? accent + '55' : accent + '88' }">{{ m.label }}</span>
           <span class="text-[15px] font-black font-mono"
-            :style="{ color: m.color, textShadow: `0 0 8px ${m.color}88` }">{{ m.value }}</span>
-          <span class="text-[9px] font-mono text-zinc-700">{{ m.sub }}</span>
+            :style="{ color: m.color, textShadow: isDark ? `0 0 8px ${m.color}88` : 'none' }">{{ m.value }}</span>
+          <span class="text-[9px] font-mono" :style="{ color: isDark ? '#3f3f46' : '#94a3b8' }">{{ m.sub }}</span>
         </div>
       </div>
       <div class="absolute bottom-0 left-0 right-0 h-px"
@@ -212,7 +230,11 @@
 
     <!-- minimal -->
     <div v-else-if="balanceStyle === 'minimal'" class="mx-4 mb-4 rounded-2xl overflow-hidden relative"
-      :style="{ background: 'rgba(15,15,20,0.85)', border: `1px solid ${accent}22`, backdropFilter: 'blur(24px)' }">
+      :style="{
+        background: isDark ? 'rgba(15,15,20,0.85)' : 'rgba(255,255,255,0.88)',
+        border: `1px solid ${accent}22`,
+        backdropFilter: 'blur(24px)',
+      }">
       <div class="absolute top-0 right-0 w-40 h-40 pointer-events-none rounded-full"
         :style="{ background: `radial-gradient(circle at 80% 0%, ${accent}20 0%, transparent 65%)`, filter: 'blur(18px)' }">
       </div>
@@ -229,21 +251,24 @@
         </button>
         <div class="flex-1 min-w-0">
           <p class="text-[11px] font-mono font-bold uppercase tracking-widest" :style="{ color: accent + 'AA' }">orb devkit core</p>
-          <p class="text-[13px] font-mono text-zinc-400 mt-0.5 truncate">{{ orbStatusLine }}</p>
+          <p class="text-[13px] font-mono mt-0.5 truncate" :style="{ color: isDark ? '#a1a1aa' : '#475569' }">{{ orbStatusLine }}</p>
         </div>
         <button @click="confirmDevMode"
           class="flex-shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-mono font-bold active:scale-95 transition-transform flex items-center gap-1.5"
           :style="devMode
             ? { background: accent + '18', border: `1px solid ${accent}33`, color: accent }
-            : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', color: '#52525b' }">
-          <div class="w-1.5 h-1.5 rounded-full" :style="{ background: devMode ? accent : '#3f3f46' }"></div>
+            : { background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.09)', color: isDark ? '#52525b' : '#64748b' }">
+          <div class="w-1.5 h-1.5 rounded-full" :style="{ background: devMode ? accent : isDark ? '#3f3f46' : '#94a3b8' }"></div>
           {{ devMode ? 'dev:on' : 'dev:off' }}
         </button>
       </div>
-      <div class="border-t px-5 py-3 grid grid-cols-3 gap-0" :style="{ borderColor: accent + '15' }">
+      <div class="border-t px-5 py-3 grid grid-cols-3 gap-0"
+        :style="{ borderColor: accent + '15' }">
         <div v-for="(m, i) in coreMetrics" :key="m.label"
-          :class="['flex flex-col gap-0.5', i < 2 ? 'border-r pr-4' : 'pl-4']" :style="{ borderColor: accent + '15' }">
-          <span class="text-[9px] font-mono text-zinc-700 uppercase tracking-widest">{{ m.label }}</span>
+          :class="['flex flex-col gap-0.5', i < 2 ? 'border-r pr-4' : 'pl-4']"
+          :style="{ borderColor: accent + '15' }">
+          <span class="text-[9px] font-mono uppercase tracking-widest"
+            :style="{ color: isDark ? '#3f3f46' : '#94a3b8' }">{{ m.label }}</span>
           <span class="text-[13px] font-black font-mono" :style="{ color: m.color }">{{ m.value }}</span>
         </div>
       </div>
@@ -251,15 +276,25 @@
 
     <!-- glass -->
     <div v-else-if="balanceStyle === 'glass'" class="mx-4 mb-4 rounded-3xl overflow-hidden relative"
-      style="background:rgba(255,255,255,0.05);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,0.1);box-shadow:0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);">
+      :style="{
+        background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.72)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(148,163,184,0.25)',
+        boxShadow: isDark ? '0 8px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)' : '0 8px 40px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+      }">
       <div class="absolute -top-10 -right-10 w-48 h-48 rounded-full pointer-events-none"
         :style="{ background: `radial-gradient(circle, ${accent}25 0%, transparent 70%)`, filter: 'blur(20px)' }"></div>
       <div class="absolute top-3 right-3 z-10">
         <button @click="confirmDevMode"
           class="flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all active:scale-95"
-          :style="devMode ? { background: `${accent}20`, border: `1px solid ${accent}44` } : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }">
-          <div class="w-1.5 h-1.5 rounded-full" :style="{ background: devMode ? accent : 'rgba(255,255,255,0.2)' }"></div>
-          <span class="text-[10px] font-mono font-bold" :style="{ color: devMode ? accent : 'rgba(255,255,255,0.25)' }">
+          :style="devMode
+            ? { background: `${accent}20`, border: `1px solid ${accent}44` }
+            : { background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.09)' }">
+          <div class="w-1.5 h-1.5 rounded-full"
+            :style="{ background: devMode ? accent : isDark ? 'rgba(255,255,255,0.2)' : '#94a3b8' }"></div>
+          <span class="text-[10px] font-mono font-bold"
+            :style="{ color: devMode ? accent : isDark ? 'rgba(255,255,255,0.25)' : '#64748b' }">
             {{ devMode ? 'dev:on' : 'dev:off' }}
           </span>
         </button>
@@ -272,25 +307,31 @@
           </div>
           <div class="absolute inset-0 rounded-full"
             style="background:radial-gradient(circle at 38% 32%,#1a1a2e 0%,#09090b 45%,#000 100%);"
-            :style="{ boxShadow: `inset 0 0 22px rgba(0,0,0,1), 0 0 0 1px rgba(255,255,255,0.15)` }"></div>
+            :style="{ boxShadow: `inset 0 0 22px rgba(0,0,0,1), 0 0 0 1px ${isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'}` }"></div>
           <div class="absolute inset-0 rounded-full"
             :style="{ background: `radial-gradient(circle at 28% 26%, ${accent}2E 0%, transparent 55%)` }"></div>
         </div>
-        <p class="mt-4 text-[11px] font-mono text-white/40 text-center">{{ orbStatusLine }}</p>
+        <p class="mt-4 text-[11px] font-mono text-center"
+          :style="{ color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(15,23,42,0.45)' }">{{ orbStatusLine }}</p>
       </button>
-      <div class="grid grid-cols-3 gap-0 pb-4 px-5 border-t border-white/5 pt-3">
+      <div class="grid grid-cols-3 gap-0 pb-4 px-5 pt-3"
+        :style="{ borderTop: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(148,163,184,0.18)' }">
         <div v-for="(m, i) in coreMetrics" :key="m.label"
-          :class="['flex flex-col gap-0.5', i < 2 ? 'border-r border-white/8 pr-4' : 'pl-4']">
-          <span class="text-[9px] font-mono text-white/25 uppercase tracking-widest">{{ m.label }}</span>
+          :class="['flex flex-col gap-0.5', i < 2 ? 'border-r pr-4' : 'pl-4']"
+          :style="{ borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(148,163,184,0.2)' }">
+          <span class="text-[9px] font-mono uppercase tracking-widest"
+            :style="{ color: isDark ? 'rgba(255,255,255,0.25)' : '#94a3b8' }">{{ m.label }}</span>
           <span class="text-[15px] font-black font-mono" :style="{ color: m.color }">{{ m.value }}</span>
-          <span class="text-[9px] font-mono text-white/20">{{ m.sub }}</span>
+          <span class="text-[9px] font-mono"
+            :style="{ color: isDark ? 'rgba(255,255,255,0.20)' : '#94a3b8' }">{{ m.sub }}</span>
         </div>
       </div>
     </div>
 
     <!-- ── Dev Tools ── -->
     <div class="flex items-center justify-between px-5 pb-2">
-      <p class="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">dev_tools</p>
+      <p class="text-[10px] font-mono uppercase tracking-widest"
+        :style="{ color: isDark ? '#52525b' : '#94a3b8' }">dev_tools</p>
     </div>
     <div class="flex flex-col gap-2.5 px-4 mb-4">
 
@@ -303,8 +344,10 @@
           <KeyRound :size="22" :style="{ color: accent }" :stroke-width="1.8" />
         </div>
         <div class="flex-1 min-w-0 text-left">
-          <p class="text-[15px] font-black text-zinc-100 font-mono mb-0.5">Pocket ENV</p>
-          <p class="text-[11px] font-mono text-zinc-500 leading-snug">Store &amp; sync .env variables to VSCode via daemon</p>
+          <p class="text-[15px] font-black font-mono mb-0.5"
+            :style="{ color: isDark ? '#f4f4f5' : '#0f172a' }">Config Vault</p>
+          <p class="text-[11px] font-mono leading-snug"
+            :style="{ color: isDark ? '#52525b' : '#64748b' }">Store &amp; sync .env variables to VSCode via daemon</p>
         </div>
         <div class="flex-shrink-0 flex flex-col items-end gap-1">
           <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg"
@@ -314,7 +357,7 @@
               {{ daemonConnected ? 'synced' : 'offline' }}
             </span>
           </div>
-          <span class="text-[10px] font-mono text-zinc-700">{{ envVarCount }} vars</span>
+          <span class="text-[10px] font-mono" :style="{ color: isDark ? '#3f3f46' : '#94a3b8' }">{{ envVarCount }} vars</span>
         </div>
       </button>
 
@@ -327,12 +370,14 @@
           <ShieldCheck :size="22" :style="{ color: accent }" :stroke-width="1.8" />
         </div>
         <div class="flex-1 min-w-0 text-left">
-          <p class="text-[15px] font-black text-zinc-100 font-mono mb-0.5">Password Manager</p>
-          <p class="text-[11px] font-mono text-zinc-500 leading-snug">Self-hosted account &amp; credential vault</p>
+          <p class="text-[15px] font-black font-mono mb-0.5"
+            :style="{ color: isDark ? '#f4f4f5' : '#0f172a' }">Secret/Key Vault</p>
+          <p class="text-[11px] font-mono leading-snug"
+            :style="{ color: isDark ? '#52525b' : '#64748b' }">Self-hosted account &amp; credential vault</p>
         </div>
         <div class="flex-shrink-0 flex flex-col items-end gap-1">
           <span class="text-[14px] font-black font-mono" :style="{ color: accent }">{{ vaultCount }}</span>
-          <span class="text-[9px] font-mono text-zinc-700">entries</span>
+          <span class="text-[9px] font-mono" :style="{ color: isDark ? '#3f3f46' : '#94a3b8' }">entries</span>
         </div>
       </button>
 
@@ -399,10 +444,12 @@ import { settings, orbLog } from '../composables/useStore'
 import { devMode, devSessionTime, toggleDevMode } from '../composables/useDevMode'
 import { devices as connectedDevices } from '../composables/useDevices'
 import { useDaemon } from '../composables/useDaemon'
+import { useDark } from '../composables/useDark'
 
 const { navigate } = useNav()
 const accent = computed(() => settings.value.accentColor)
 const balanceStyle = computed(() => settings.value.balanceStyle ?? 'supreme')
+const { isDark } = useDark()
 
 const { connected: daemonConnected, latency: daemonLatency } = useDaemon()
 
@@ -420,14 +467,8 @@ function goToDevice() {
   else navigate('devices')
 }
 
-function confirmDevMode() {
-  showDevConfirm.value = true
-}
-
-function executeDevToggle() {
-  showDevConfirm.value = false
-  toggleDevMode()
-}
+function confirmDevMode() { showDevConfirm.value = true }
+function executeDevToggle() { showDevConfirm.value = false; toggleDevMode() }
 
 // ── Twin Daemon Orb ───────────────────────────────────────
 const showTwinOrb = ref(false)
@@ -491,13 +532,13 @@ const coreMetrics = computed(() => [
     label: 'devices',
     value: connectedDevices.value.filter(d => d.online).length.toString(),
     sub: daemonConnected.value ? 'desktop linked' : 'no device',
-    color: daemonConnected.value ? accent.value : '#3f3f46',
+    color: daemonConnected.value ? accent.value : isDark.value ? '#3f3f46' : '#94a3b8',
   },
   {
     label: 'dev_mode',
     value: devMode.value ? 'ON' : 'OFF',
     sub: devMode.value ? devSessionTime.value : 'tap orb',
-    color: devMode.value ? accent.value : '#3f3f46',
+    color: devMode.value ? accent.value : isDark.value ? '#3f3f46' : '#94a3b8',
   },
 ])
 
@@ -524,7 +565,10 @@ function initStarfield(canvas: HTMLCanvasElement) {
       s.a += s.da; if (s.a > 1 || s.a < 0) s.da *= -1
       s.x = (s.x + s.dx + W) % W; s.y = (s.y + s.dy + H) % H
       ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2)
-      ctx.fillStyle = `rgba(150,180,255,${Math.max(0, Math.min(1, s.a))})`; ctx.fill()
+      // In light mode stars are subtle dark dots; in dark mode they're light
+      const starColor = isDark.value ? `rgba(150,180,255,${Math.max(0,Math.min(1,s.a))})` : `rgba(99,102,241,${Math.max(0,Math.min(1,s.a*0.4))})`
+      ctx.fillStyle = starColor
+      ctx.fill()
     }
     animFrame = requestAnimationFrame(draw)
   }
@@ -539,7 +583,7 @@ onUnmounted(() => { cancelAnimationFrame(animFrame); if (twinOrbTimer) clearTime
 </script>
 
 <style scoped>
-.devkit-root { background: #060810; min-height: 100%; }
+.devkit-root { background: transparent; min-height: 100%; }
 .devtool-card { position: relative; overflow: hidden; }
 .devtool-card::before {
   content: '';

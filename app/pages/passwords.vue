@@ -36,7 +36,7 @@
       <div class="text-center">
         <p class="text-[10px] font-mono text-zinc-600 tracking-[0.25em] uppercase mb-1">orb devkit / security</p>
         <h1 class="text-[22px] font-black text-zinc-50 tracking-tight font-mono">
-          <span :style="{ color: accent }">?</span> vault
+          <span :style="{ color: accent }">›</span> Secret vault
         </h1>
         <p class="text-[12px] font-mono text-zinc-500 mt-2 leading-relaxed">
           Shared vault password required.<br>Same password as your ENV manager.

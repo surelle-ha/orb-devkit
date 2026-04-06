@@ -1,10 +1,13 @@
 <template>
   <div>
+    <OnboardingScreen v-if="phase === 'onboarding'" @done="onOnboardingDone" />
     <SplashScreen v-if="phase === 'splash'" @done="onSplashDone" />
     <template v-else>
       <Transition name="app-fade">
         <div v-if="appVisible" class="contents">
-          <NuxtLayout><NuxtPage /></NuxtLayout>
+          <NuxtLayout>
+            <NuxtPage />
+          </NuxtLayout>
         </div>
       </Transition>
       <IdleLockScreen />
@@ -15,20 +18,21 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted, nextTick } from 'vue'
-import SplashScreen   from '~/components/SplashScreen.vue'
+import OnboardingScreen from '~/components/OnboardingScreen.vue'
+import SplashScreen from '~/components/SplashScreen.vue'
 import IdleLockScreen from '~/components/IdleLockScreen.vue'
-import PinLockScreen  from '~/components/PinLockScreen.vue'
-import { useDark }    from '~/composables/useDark'
+import PinLockScreen from '~/components/PinLockScreen.vue'
+import { useDark } from '~/composables/useDark'
 import { initIdleLock } from '~/composables/useIdleLock'
-import { settings }   from '~/composables/useStore'
+import { settings } from '~/composables/useStore'
 import { pinEnabled, lockWithPin } from '~/composables/usePin'
 import { initDatabase } from '~/utils/initDatabase'
 import { useDaemon } from '~/composables/useDaemon'
 import { reloadDevices } from '~/composables/useDevices'
 import { App as CapApp } from '@capacitor/app'
 
-type Phase = 'splash' | 'app'
-const phase      = ref<Phase>('splash')
+type Phase = 'onboarding' | 'splash' | 'app'
+const phase = ref<Phase>('onboarding')
 const appVisible = ref(false)
 
 const { initDark } = useDark()
@@ -87,7 +91,7 @@ onMounted(async () => {
   try {
     const { SplashScreen } = await import('@capacitor/splash-screen')
     await SplashScreen.hide()
-  } catch {}
+  } catch { }
 
   initDatabase().catch(e => console.warn('[Orb] DB init:', e))
 
@@ -100,7 +104,7 @@ onMounted(async () => {
       // Small delay to let the network stack recover after backgrounding
       await new Promise(r => setTimeout(r, 800))
       // connect() internally checks isSocketAlive() so it's safe to call always
-      daemonConnect().catch(() => {})
+      daemonConnect().catch(() => { })
       // Sync device list state from localStorage
       reloadDevices()
     }
@@ -108,9 +112,13 @@ onMounted(async () => {
 
   // Initial connect attempt on startup if we have saved pairing info
   if (daemonInfo.value) {
-    daemonConnect().catch(() => {})
+    daemonConnect().catch(() => { })
   }
 })
+
+async function onOnboardingDone() {
+  phase.value = 'splash'
+}
 
 async function onSplashDone() {
   await enterApp()
@@ -128,12 +136,14 @@ async function enterApp() {
 <style>
 .app-fade-enter-active {
   transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1),
-              transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .app-fade-enter-from {
   opacity: 0;
   transform: translateY(10px) scale(0.995);
 }
+
 .app-fade-enter-to {
   opacity: 1;
   transform: translateY(0) scale(1);
